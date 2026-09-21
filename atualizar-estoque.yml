@@ -1,0 +1,104 @@
+name: Atualizar Estoque Apucarana
+
+on:
+  schedule:
+    # Rede de segurança: roda de hora em hora mesmo se o aviso instantâneo falhar.
+    # GitHub Actions usa horário UTC. Brasília = UTC-3.
+    # 08:30 BRT = 11:30 UTC, depois de hora em hora até 20:30 BRT (23:30 UTC).
+    - cron: '30 11-23 * * *'
+  repository_dispatch:
+    # Canal alternativo, hoje SEM USO: o Apps Script da planilha dispara pelo
+    # workflow_dispatch (endpoint /actions/workflows/atualizar-estoque.yml/
+    # dispatches), não por aqui. Fica disponível caso algum outro sistema
+    # precise avisar o painel por este caminho.
+    types: [estoque-atualizado]
+  workflow_dispatch:
+    # Dois caminhos usam isso: o botão "Run workflow" aqui no GitHub e o
+    # Apps Script da planilha. O Apps Script não manda inputs, então
+    # "forcar_validacao" fica no padrão false - a trava continua valendo nos
+    # disparos da planilha, e só forçar na mão ignora ela.
+    inputs:
+      forcar_validacao:
+        description: 'Forçar publicação mesmo com queda grande (marcar só quando a queda é real, não erro de planilha)'
+        type: boolean
+        default: false
+        required: false
+
+concurrency:
+  # Evita duas rodadas rodando ao mesmo tempo (ex: edição na planilha e um
+  # "Run workflow" manual quase juntos) - a segunda espera a primeira
+  # terminar em vez de dar "push rejeitado" por causa de commit conflitante.
+  group: atualizar-estoque
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install requests
+
+      - name: Baixar dados da Planilha Google e atualizar site
+        env:
+          GSHEET_CSV_URL: ${{ secrets.GSHEET_CSV_URL }}
+          GSHEET_VALIDADES_CSV_URL: ${{ secrets.GSHEET_VALIDADES_CSV_URL }}
+          GSHEET_PRECOS_CSV_URL: ${{ secrets.GSHEET_PRECOS_CSV_URL }}
+          GSHEET_PEDIDOS_CSV_URL: ${{ secrets.GSHEET_PEDIDOS_CSV_URL }}
+          GSHEET_PROGRAMACAO_CSV_URL: ${{ secrets.GSHEET_PROGRAMACAO_CSV_URL }}
+          # Só true quando a rodada foi disparada manualmente com a caixinha
+          # "Forçar publicação..." marcada - nas rodadas automáticas (hora em
+          # hora) fica sempre false, ou seja, a trava de segurança continua
+          # valendo normalmente todo o resto do tempo.
+          FORCAR_VALIDACAO: ${{ github.event.inputs.forcar_validacao }}
+          # Opcional: só é usada como fallback pra classificar item novo cuja
+          # descrição não bate com nenhuma palavra-chave conhecida. Sem essa
+          # secret, o script funciona normalmente (o item cai direto em
+          # "Não Classificados" nesse caso).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/atualizar_estoque.py
+
+      - name: Commit e push se houve mudança
+        # Roda mesmo se o passo anterior terminar com erro de validação
+        # (seção reprovada na conferência) - as páginas que passaram na
+        # checagem e mudaram no disco ainda devem ser publicadas; só a(s)
+        # página(s) reprovada(s) fica(m) sem mudança (então nem entra no
+        # commit). Só não roda se a rodada foi cancelada manualmente.
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "estoque-bot"
+          git config user.email "actions@github.com"
+          git add index.html tabela-precos.html pedidos-em-aberto.html
+          if git diff --cached --quiet; then
+            echo "Nada mudou, sem commit."
+          else
+            git commit -m "Atualização automática - $(date '+%d/%m/%Y %H:%M')"
+            # Se alguém deu push no repositório entre o checkout e agora
+            # (outra rodada, ou um commit manual), o push simples seria
+            # rejeitado ("fetch first"). Busca o que há de novo e reaplica
+            # esse commit por cima antes de tentar de novo, com algumas
+            # tentativas pra cobrir corrida com outra rodada em paralelo.
+            tentativas=0
+            ate_conseguir=1
+            while [ $ate_conseguir -ne 0 ] && [ $tentativas -lt 5 ]; do
+              if git push; then
+                ate_conseguir=0
+              else
+                tentativas=$((tentativas + 1))
+                echo "Push rejeitado, tentativa $tentativas - buscando mudanças novas e tentando de novo..."
+                git fetch origin main
+                git rebase origin/main
+              fi
+            done
+            if [ $ate_conseguir -ne 0 ]; then
+              echo "Não consegui dar push depois de várias tentativas - verifique o repositório manualmente."
+              exit 1
+            fi
+          fi
