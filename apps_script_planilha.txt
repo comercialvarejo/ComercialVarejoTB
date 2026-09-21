@@ -1,0 +1,153 @@
+/**
+ * Dispara a atualização do painel (GitHub Actions) quando a planilha muda.
+ *
+ * Como funciona: cada edição agenda um disparo único daqui a ATRASO_MS e
+ * cancela o disparo que estava agendado antes. Assim, colar estoque + preços
+ * + pedidos em sequência gera UM disparo só, depois que você terminou, em
+ * vez de um disparo por colagem.
+ *
+ * Configuração (uma vez): Project Settings -> Script Properties
+ *   GITHUB_TOKEN = token do GitHub com permissão de Actions (write)
+ *   GITHUB_REPO  = Pnetor/Comercial-Varejo-Apucarana
+ *   EMAIL_AVISO  = (opcional) e-mail que recebe aviso se o disparo falhar;
+ *                  se não preencher, usa o e-mail do dono do script.
+ */
+
+// Espera depois da última edição antes de disparar. Dois motivos pra não ser
+// curto (antes eram 8 s):
+//   1. dá tempo de terminar de colar as abas (estoque, preços, pedidos) antes
+//      do site ser gerado - evita publicar planilha pela metade;
+//   2. principalmente: o CSV "publicado na web" que o script lê fica em cache
+//      no Google por alguns minutos depois da alteração. Disparando rápido
+//      demais, a rodada lê a versão ANTERIOR da planilha - é aquele sintoma
+//      de "editei e o site não mudou nada", que depois se corrige sozinho na
+//      rodada seguinte (de hora em hora).
+// 3 minutos cobre com folga o cache do Google. Se ainda notar dado velho,
+// aumente (ex: 300000 = 5 min); o cron de hora em hora é a rede de segurança.
+var ATRASO_MS = 180000;
+
+var NOME_ARQUIVO_WORKFLOW = 'atualizar-estoque.yml';
+var FUNCAO_DISPARO = 'dispararAtualizacaoGitHub';
+
+/**
+ * Instalar como gatilho: Gatilhos -> Adicionar gatilho ->
+ * função "aoEditarPlanilha", evento "Ao editar" (e um segundo gatilho igual
+ * com "Ao alterar", se dados entrarem por importação/outro script).
+ */
+function aoEditarPlanilha(e) {
+  limparGatilhosDeDisparo_();
+
+  ScriptApp.newTrigger(FUNCAO_DISPARO)
+    .timeBased()
+    .after(ATRASO_MS)
+    .create();
+}
+
+function dispararAtualizacaoGitHub() {
+  // Um gatilho "after" é de uso único, mas continua ocupando vaga na lista
+  // de gatilhos do projeto (o limite é 20). Limpa já na entrada pra nunca
+  // acumular gatilho velho e parar de conseguir criar novos.
+  limparGatilhosDeDisparo_();
+
+  var props = PropertiesService.getScriptProperties();
+  var token = props.getProperty('GITHUB_TOKEN');
+  var repo = props.getProperty('GITHUB_REPO');
+
+  if (!token || !repo) {
+    var faltando = (!token ? 'GITHUB_TOKEN ' : '') + (!repo ? 'GITHUB_REPO' : '');
+    Logger.log('ERRO: falta configurar nas Propriedades do script: ' + faltando);
+    avisarFalha_('Faltando configuração no Apps Script: ' + faltando);
+    return;
+  }
+
+  var url = 'https://api.github.com/repos/' + repo + '/actions/workflows/' +
+    NOME_ARQUIVO_WORKFLOW + '/dispatches';
+
+  var options = {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      Accept: 'application/vnd.github+json',
+    },
+    // "inputs" fica de fora de propósito: a caixinha "Forçar publicação"
+    // do workflow deve valer só quando alguém roda manualmente no GitHub.
+    payload: JSON.stringify({ ref: 'main' }),
+    muteHttpExceptions: true,
+  };
+
+  var resposta;
+  try {
+    resposta = UrlFetchApp.fetch(url, options);
+  } catch (erro) {
+    Logger.log('ERRO de rede ao chamar o GitHub: ' + erro);
+    avisarFalha_('Não consegui falar com o GitHub: ' + erro);
+    return;
+  }
+
+  var codigo = resposta.getResponseCode();
+  var corpo = resposta.getContentText();
+  Logger.log('POST ' + url + ' -> ' + codigo + ' ' + corpo);
+
+  // 204 = aceito (esse endpoint não devolve corpo quando dá certo).
+  if (codigo === 204) {
+    return;
+  }
+
+  // Aqui é o ponto que faltava: antes, um token vencido ou repositório
+  // errado só ficava no log e o painel simplesmente parava de atualizar
+  // sem ninguém saber. Agora chega aviso por e-mail.
+  var explicacao =
+    codigo === 401 ? 'token do GitHub inválido ou vencido (401)' :
+    codigo === 403 ? 'token sem permissão de Actions, ou limite da API (403)' :
+    codigo === 404 ? 'repositório, branch ou arquivo do workflow não encontrado (404) - confira GITHUB_REPO e o nome ' + NOME_ARQUIVO_WORKFLOW :
+    codigo === 422 ? 'requisição recusada (422) - normalmente branch "main" inexistente ou workflow sem workflow_dispatch' :
+    'resposta inesperada ' + codigo;
+
+  Logger.log('FALHA no disparo: ' + explicacao);
+  avisarFalha_('O painel não foi atualizado: ' + explicacao + '\n\nResposta do GitHub:\n' + corpo);
+}
+
+/** Roda essa função manualmente pra testar a configuração sem editar a planilha. */
+function testarDisparo() {
+  dispararAtualizacaoGitHub();
+  var ultimo = 'Veja o resultado em "Execuções" (menu da esquerda) ou no log abaixo.';
+  Logger.log(ultimo);
+}
+
+function limparGatilhosDeDisparo_() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === FUNCAO_DISPARO) {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+}
+
+function avisarFalha_(mensagem) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var destino = props.getProperty('EMAIL_AVISO') ||
+      Session.getEffectiveUser().getEmail();
+    if (!destino) {
+      return;
+    }
+    // Manda no máximo 1 aviso por hora, pra não lotar a caixa de entrada se
+    // a planilha for editada várias vezes com o token quebrado.
+    var agora = Date.now();
+    var ultimoAviso = Number(props.getProperty('ULTIMO_AVISO_MS') || 0);
+    if (agora - ultimoAviso < 3600000) {
+      Logger.log('Aviso por e-mail suprimido (já mandei um na última hora).');
+      return;
+    }
+    props.setProperty('ULTIMO_AVISO_MS', String(agora));
+
+    MailApp.sendEmail({
+      to: destino,
+      subject: '[Painel Apucarana] Falha ao atualizar o site',
+      body: mensagem + '\n\n--\nAviso automático do Apps Script da planilha ' +
+        'Comercial Apucarana Varejo.',
+    });
+  } catch (erro) {
+    Logger.log('Não consegui enviar o e-mail de aviso: ' + erro);
+  }
+}
