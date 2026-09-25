@@ -1,88 +1,52 @@
-rules_version = '2';
+name: Sincronizar aba Propostas
 
-// Regras de segurança do Painel de Propostas.
-// Cole este arquivo inteiro em: Firebase > Firestore Database > Regras > Publicar.
-service cloud.firestore {
-  match /databases/{database}/documents {
+# Pega a versão mais nova do painel Propostas & Retorno (que mora no
+# repositório Painel-Propostas-Retorno), cola a barra de abas do Estoque no
+# topo e grava aqui como propostas-retorno.html.
 
-    // ▼▼▼ E-MAILS DOS APROVADORES — sempre em letras minúsculas ▼▼▼
-    function aprovadores() {
-      return [
-        'paulo.neto@gtf.com.br',
-        'miguel.trindade@gtf.com.br',
-        'leonardo.goncalves@gtf.com.br',
-        'rafael.gomes@gtf.com.br',
-        'josimar.barros@gtf.com.br'
-      ];
-    }
-    // ▲▲▲ Para trocar um aprovador, edite a lista acima e clique em Publicar ▲▲▲
+on:
+  schedule:
+    # GitHub Actions usa horário UTC. Brasília = UTC-3.
+    # 06:00, 10:00, 14:00 e 18:00 BRT.
+    - cron: '0 9,13,17,21 * * *'
+  workflow_dispatch:
 
-    function logado() {
-      return request.auth != null && request.auth.token.email is string;
-    }
-    function email() {
-      return request.auth.token.email.lower();
-    }
-    // E-mail e senha: só depois de confirmar o e-mail. Conta Microsoft: já vem confirmada pela empresa.
-    function confirmado() {
-      return request.auth.token.email_verified == true
-          || request.auth.token.firebase.sign_in_provider == 'microsoft.com';
-    }
-    function daGtf() {
-      return logado() && confirmado() && email().matches('.*@gtf[.]com[.]br');
-    }
-    // Representante: qualquer e-mail, desde que confirmado e liberado por um aprovador em "Representantes".
-    function liberado() {
-      return logado()
-          && request.auth.token.email_verified == true
-          && exists(/databases/$(database)/documents/acessos/$(email()))
-          && get(/databases/$(database)/documents/acessos/$(email())).data.ativo == true;
-    }
-    function usuario() {
-      return daGtf() || liberado();
-    }
-    function aprovador() {
-      return daGtf() && email() in aprovadores();
-    }
-    function dono() {
-      return usuario() && resource.data.uid == request.auth.uid;
-    }
-    function mudou() {
-      return request.resource.data.diff(resource.data).affectedKeys();
-    }
+concurrency:
+  group: sincronizar-propostas
+  cancel-in-progress: false
 
-    match /propostas/{id} {
-      // Vendedor lê só as próprias. Aprovador lê todas.
-      allow read: if aprovador() || dono();
+permissions:
+  contents: write
 
-      // Vendedor ou representante liberado cria em nome dele mesmo, sem retorno preenchido.
-      allow create: if usuario()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.vendedorEmail == email()
-        && request.resource.data.keys().hasOnly(['uid','vendedorNome','vendedorEmail','n','cliente','doc',
-             'supervisor','itens','desc','obs','versao','criadaEm','enviadaEm','envios','aceite'])
-        && request.resource.data.itens is list
-        && request.resource.data.itens.size() > 0
-        && request.resource.data.itens.size() <= 100;
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
 
-      // Vendedor ajusta e reenvia a própria proposta, mas nunca mexe no retorno.
-      // Aprovador só grava o retorno, e assinado com o próprio usuário.
-      allow update: if (dono() && !mudou().hasAny(['uid','vendedorEmail','n','criadaEm','resposta','anteriores']))
-                    || (aprovador() && mudou().hasOnly(['resposta','anteriores'])
-                        && request.resource.data.resposta.por == request.auth.uid);
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      allow delete: if false;
-    }
+      - name: Baixar o painel de Propostas e montar a aba
+        run: python3 scripts/sincronizar_propostas.py
 
-    match /config/{id} {
-      allow read: if usuario();
-      allow write: if aprovador();
-    }
-
-    // Lista de representantes liberados (o id do documento é o e-mail em minúsculas).
-    match /acessos/{emailLiberado} {
-      allow read: if aprovador() || (logado() && emailLiberado == email());
-      allow write: if aprovador();
-    }
-  }
-}
+      - name: Publicar se mudou alguma coisa
+        run: |
+          if [ -z "$(git status --porcelain propostas-retorno.html)" ]; then
+            echo "Nada mudou no painel de Propostas. Nenhum commit."
+            exit 0
+          fi
+          git config user.name  "actions-user"
+          git config user.email "actions@github.com"
+          git add propostas-retorno.html
+          git commit -m "Sincroniza aba Propostas - $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
+          for tentativa in 1 2 3; do
+            git pull --rebase origin ${{ github.ref_name }} && git push && exit 0
+            echo "Push falhou (tentativa $tentativa), tentando de novo..."
+            sleep 5
+          done
+          echo "Não consegui publicar depois de 3 tentativas."
+          exit 1
