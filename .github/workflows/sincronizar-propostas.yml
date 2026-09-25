@@ -1,0 +1,88 @@
+rules_version = '2';
+
+// Regras de segurança do Painel de Propostas.
+// Cole este arquivo inteiro em: Firebase > Firestore Database > Regras > Publicar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ▼▼▼ E-MAILS DOS APROVADORES — sempre em letras minúsculas ▼▼▼
+    function aprovadores() {
+      return [
+        'paulo.neto@gtf.com.br',
+        'miguel.trindade@gtf.com.br',
+        'leonardo.goncalves@gtf.com.br',
+        'rafael.gomes@gtf.com.br',
+        'josimar.barros@gtf.com.br'
+      ];
+    }
+    // ▲▲▲ Para trocar um aprovador, edite a lista acima e clique em Publicar ▲▲▲
+
+    function logado() {
+      return request.auth != null && request.auth.token.email is string;
+    }
+    function email() {
+      return request.auth.token.email.lower();
+    }
+    // E-mail e senha: só depois de confirmar o e-mail. Conta Microsoft: já vem confirmada pela empresa.
+    function confirmado() {
+      return request.auth.token.email_verified == true
+          || request.auth.token.firebase.sign_in_provider == 'microsoft.com';
+    }
+    function daGtf() {
+      return logado() && confirmado() && email().matches('.*@gtf[.]com[.]br');
+    }
+    // Representante: qualquer e-mail, desde que confirmado e liberado por um aprovador em "Representantes".
+    function liberado() {
+      return logado()
+          && request.auth.token.email_verified == true
+          && exists(/databases/$(database)/documents/acessos/$(email()))
+          && get(/databases/$(database)/documents/acessos/$(email())).data.ativo == true;
+    }
+    function usuario() {
+      return daGtf() || liberado();
+    }
+    function aprovador() {
+      return daGtf() && email() in aprovadores();
+    }
+    function dono() {
+      return usuario() && resource.data.uid == request.auth.uid;
+    }
+    function mudou() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    match /propostas/{id} {
+      // Vendedor lê só as próprias. Aprovador lê todas.
+      allow read: if aprovador() || dono();
+
+      // Vendedor ou representante liberado cria em nome dele mesmo, sem retorno preenchido.
+      allow create: if usuario()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.vendedorEmail == email()
+        && request.resource.data.keys().hasOnly(['uid','vendedorNome','vendedorEmail','n','cliente','doc',
+             'supervisor','itens','desc','obs','versao','criadaEm','enviadaEm','envios','aceite'])
+        && request.resource.data.itens is list
+        && request.resource.data.itens.size() > 0
+        && request.resource.data.itens.size() <= 100;
+
+      // Vendedor ajusta e reenvia a própria proposta, mas nunca mexe no retorno.
+      // Aprovador só grava o retorno, e assinado com o próprio usuário.
+      allow update: if (dono() && !mudou().hasAny(['uid','vendedorEmail','n','criadaEm','resposta','anteriores']))
+                    || (aprovador() && mudou().hasOnly(['resposta','anteriores'])
+                        && request.resource.data.resposta.por == request.auth.uid);
+
+      allow delete: if false;
+    }
+
+    match /config/{id} {
+      allow read: if usuario();
+      allow write: if aprovador();
+    }
+
+    // Lista de representantes liberados (o id do documento é o e-mail em minúsculas).
+    match /acessos/{emailLiberado} {
+      allow read: if aprovador() || (logado() && emailLiberado == email());
+      allow write: if aprovador();
+    }
+  }
+}
