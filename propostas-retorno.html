@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Propostas &amp; Retorno – Comercial Varejo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#EDF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --ink:#15201E; --ink-2:#4C5B57; --ink-3:#7A8884;
+  --line:#D3DCD9; --line-2:#E5EBE9; --accent:#0D5B79; --accent-hover:#0A4A63; --accent-ink:#FFFFFF; --accent-soft:#DCEBF1;
+  --ok:#1F7446; --ok-soft:#DCEFE3; --warn:#94650C; --warn-soft:#F5E8C7; --bad:#AD271F; --bad-soft:#F6DDDA;
+  --info:#5B4BA0; --info-soft:#E7E3F5;
+  --shadow:0 1px 2px rgba(16,32,30,.06),0 6px 24px -12px rgba(16,32,30,.18);
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1514; --surface:#161F1E; --surface-2:#1B2524; --ink:#E3EBE9; --ink-2:#A7B5B1; --ink-3:#7B8985;
+    --line:#2A3735; --line-2:#212D2C; --accent:#5DB1D2; --accent-hover:#7CC2DE; --accent-ink:#062230; --accent-soft:#15323D;
+    --ok:#6BCB92; --ok-soft:#163325; --warn:#E1B352; --warn-soft:#382C13; --bad:#EF8A80; --bad-soft:#3B1C19;
+    --info:#A99BE6; --info-soft:#262040;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1514; --surface:#161F1E; --surface-2:#1B2524; --ink:#E3EBE9; --ink-2:#A7B5B1; --ink-3:#7B8985;
+  --line:#2A3735; --line-2:#212D2C; --accent:#5DB1D2; --accent-hover:#7CC2DE; --accent-ink:#062230; --accent-soft:#15323D;
+  --ok:#6BCB92; --ok-soft:#163325; --warn:#E1B352; --warn-soft:#382C13; --bad:#EF8A80; --bad-soft:#3B1C19;
+  --info:#A99BE6; --info-soft:#262040;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px -14px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+.top{max-width:1240px;margin:0 auto;padding:18px 16px 14px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:34px;height:34px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:none}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.01em;margin:0;line-height:1.1}
+.brand p{margin:0;color:var(--ink-3);font-size:13px}
+.seg-mode{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg-mode button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-weight:600;font-size:14px;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center}
+.seg-mode button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--bad);color:#fff;font-size:12px;display:inline-grid;place-items:center;font-weight:700}
+
+.app{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:0 40px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:880px){.app{grid-template-columns:minmax(0,1fr)}}
+
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:12px}
+@media (max-width:880px){.side{position:static}}
+.side-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.side-head h2{font-family:var(--f-display);font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin:0;font-weight:600}
+.plist{display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 300px);overflow:auto;padding:2px}
+@media (max-width:880px){.plist{flex-direction:row;overflow-x:auto;max-height:none;padding-bottom:6px}.pitem{min-width:230px}}
+.pitem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px}
+.pitem:hover{border-color:var(--ink-3)}
+.pitem[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.pitem .pn{font-family:var(--f-display);font-weight:700;font-size:17px;min-width:0;overflow-wrap:anywhere;line-height:1.2}
+.pitem .pd{grid-column:1/-1;color:var(--ink-3);font-size:12.5px}
+.pitem .pv{grid-column:1/-1;color:var(--ink-2);font-size:13px}
+.empty-side{border:1px dashed var(--line);border-radius:10px;padding:14px;color:var(--ink-3);font-size:13px}
+.sidebox{border-top:1px solid var(--line);padding-top:12px;font-size:13px;color:var(--ink-3);display:flex;flex-direction:column;gap:8px}
+.sidebox b{color:var(--ink-2)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;line-height:1.6}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.st-aguardando{background:var(--accent-soft);color:var(--accent)}
+.st-aprovada,.st-aceita{background:var(--ok-soft);color:var(--ok)}
+.st-recusada{background:var(--bad-soft);color:var(--bad)}
+.st-contra{background:var(--warn-soft);color:var(--warn)}
+.st-info{background:var(--info-soft);color:var(--info)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn.ghost:hover{background:var(--surface-2)}
+/* limpar */
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger:disabled{opacity:.5;cursor:not-allowed}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.main{min-width:0;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.phead{padding:18px 20px;display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-start;justify-content:space-between}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.phead h2{font-family:var(--f-display);font-weight:700;font-size:30px;margin:2px 0 0;line-height:1.05;display:flex;align-items:center;gap:12px;flex-wrap:wrap;text-wrap:balance;overflow-wrap:anywhere}
+.actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sec{border-top:1px solid var(--line-2);padding:14px 20px}
+.sec h3{font-family:var(--f-display);font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:600}
+.note{padding:12px 20px;border-top:1px solid var(--line-2);color:var(--ink-2);font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.note b{color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid .full{grid-column:1/-1}
+@media (max-width:640px){.grid{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label,.flabel{font-size:12px;font-weight:600;color:var(--ink-2);letter-spacing:.02em}
+.field input,.field textarea,.field select{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+.field textarea{resize:vertical;min-height:64px}
+.field .hint{font-size:12px;color:var(--ink-3)}
+.field .err{font-size:12px;color:var(--bad);font-weight:600}
+.field.bad input,.field.bad textarea{border-color:var(--bad)}
+.affix{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow:hidden}
+.affix:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.affix input{border:0!important;background:transparent!important;outline:none;font-variant-numeric:tabular-nums}
+.affix span{padding:0 10px;color:var(--ink-3);font-size:13px;font-weight:600}
+.field.bad .affix{border-color:var(--bad)}
+
+dl.data{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 18px}
+@media (max-width:640px){dl.data{grid-template-columns:repeat(2,minmax(0,1fr))}}
+dl.data div{min-width:0}
+dl.data dt{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+dl.data dd{margin:2px 0 0;font-weight:600;font-size:16px;overflow-wrap:anywhere}
+dl.data dd small{display:block;font-weight:500;font-size:12.5px;color:var(--ink-3)}
+dd.big{font-family:var(--f-display);font-size:22px!important;line-height:1.15}
+.mono{font-family:var(--f-mono);font-size:14px!important;font-weight:500!important}
+
+.tl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line-2);padding:12px 20px;gap:10px}
+@media (max-width:560px){.tl{grid-template-columns:minmax(0,1fr)}}
+.tl-s{display:grid;grid-template-columns:12px 1fr;gap:1px 8px;align-items:center;align-content:start;min-width:0}
+.tl-d{width:10px;height:10px;border-radius:50%;border:2px solid var(--line);background:var(--surface);grid-row:1}
+.tl-s.done .tl-d{background:var(--ok);border-color:var(--ok)}
+.tl-s.wait .tl-d{border-color:var(--warn);background:var(--warn-soft)}
+.tl-l{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.tl-t{grid-column:2;font-weight:600;font-size:14px}
+.tl-x{grid-column:2;font-size:12.5px;color:var(--ink-2)}
+.tl-s.wait .tl-x{color:var(--warn);font-weight:600}
+
+.verdict{margin:0 20px 16px;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.verdict.aprovada,.verdict.aceita{background:var(--ok-soft)}
+.verdict.recusada{background:var(--bad-soft)}
+.verdict.contra{background:var(--warn-soft)}
+.verdict.info{background:var(--info-soft)}
+.verdict .vt{font-family:var(--f-display);font-weight:700;font-size:22px;line-height:1.1}
+.verdict.aprovada .vt,.verdict.aceita .vt{color:var(--ok)}
+.verdict.recusada .vt{color:var(--bad)}
+.verdict.contra .vt{color:var(--warn)}
+.verdict.info .vt{color:var(--info)}
+.verdict .vc{white-space:pre-wrap;overflow-wrap:anywhere}
+.verdict .vm{font-size:13px;color:var(--ink-2)}
+.verdict .vx{display:flex;gap:18px;flex-wrap:wrap}
+.verdict .vx div{display:flex;flex-direction:column}
+.verdict .vx span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+.verdict .vx b{font-family:var(--f-display);font-size:20px}
+
+.dec{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+@media (max-width:640px){.dec{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dec button{border:0;border-right:1px solid var(--line);background:transparent;padding:11px 6px;font-size:14px;font-weight:600;color:var(--ink-2)}
+.dec button:last-child{border-right:0}
+@media (max-width:640px){.dec button:nth-child(2){border-right:0}.dec button:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+.dec button[aria-pressed="true"][data-d="aprovada"]{background:var(--ok);color:#fff}
+.dec button[aria-pressed="true"][data-d="recusada"]{background:var(--bad);color:#fff}
+.dec button[aria-pressed="true"][data-d="contra"]{background:var(--warn);color:#fff}
+.dec button[aria-pressed="true"][data-d="info"]{background:var(--info);color:#fff}
+:root[data-theme="dark"] .dec button[aria-pressed="true"]{color:#101615}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dec button[aria-pressed="true"]{color:#101615}}
+.rpanel{display:flex;flex-direction:column;gap:12px}
+
+.prev{display:flex;flex-direction:column;gap:8px}
+.prev div{font-size:13.5px;color:var(--ink-2);border-left:3px solid var(--line);padding:2px 0 2px 10px;overflow-wrap:anywhere}
+.prev b{color:var(--ink)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.search{flex:1 1 180px;min-width:0;position:relative}
+.search input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px 8px 32px}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:500;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.toggle{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);font-weight:500;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--accent);width:16px;height:16px}
+
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line-2)}
+@media (max-width:640px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.summary > div{padding:12px 20px;border-right:1px solid var(--line-2)}
+.summary > div:last-child{border-right:0}
+.summary .k{font-size:12px;color:var(--ink-3);font-weight:600;letter-spacing:.03em}
+.summary .v{font-family:var(--f-display);font-size:24px;font-weight:700;line-height:1.15}
+.summary .v small{font-family:var(--f-body);font-size:13px;font-weight:500;color:var(--ink-3)}
+
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.hist{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px;min-width:860px}
+table.hist th,table.hist td{padding:8px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle;text-align:left}
+table.hist thead th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;white-space:nowrap}
+table.hist td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.hist th.n{text-align:right}
+table.hist td:first-child,table.hist th:first-child{padding-left:20px}
+table.hist tr.hrow{cursor:pointer}
+table.hist tr.hrow:hover td{background:var(--surface-2)}
+.sub2{display:block;font-size:12px;color:var(--ink-3)}
+
+.foot{position:sticky;bottom:0;z-index:5;padding-bottom:env(safe-area-inset-bottom,0px)}
+.foot .card{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;padding:12px 16px 12px 20px}
+.foot .grow{flex:1}
+.foot .hint{font-size:13px;color:var(--ink-3)}
+.empty{padding:40px 20px;text-align:center;color:var(--ink-3)}
+.empty h3{font-family:var(--f-display);color:var(--ink);font-size:20px;margin:0 0 6px}
+.banner{padding:12px 16px;border-radius:10px;background:var(--warn-soft);color:var(--warn);font-weight:500}
+.lock{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--ink-3)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-weight:500;font-size:14px;z-index:20;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+.copybox{padding:12px 20px;border-top:1px solid var(--line-2)}
+.copybox textarea{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12.5px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ihead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ihead .hint{font-size:12px;color:var(--ink-3)}
+.icols,.irow{display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 110px 34px;gap:8px 10px;align-items:start}
+.icols{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:0 0 6px}
+.icols .r,.itot{text-align:right}
+.irow{padding:7px 0;border-top:1px solid var(--line-2)}
+.itot{padding-top:9px;font-weight:600}
+.irm{font-size:18px;line-height:1;padding:6px 8px}
+.iadd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-top:10px}
+.iadd .hint{font-size:12px;color:var(--ink-3)}
+@media (max-width:680px){.icols{display:none}.irow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px;grid-template-areas:"p p x" "q v v" "t t t"}.irow .ip{grid-area:p}.irow .iq{grid-area:q}.irow .iv{grid-area:v}.irow .itot{grid-area:t;padding-top:0}.irow .irm{grid-area:x}}
+.affix input{width:100%;min-width:0;padding:8px 10px}
+.foot .stat{display:flex;flex-direction:column}
+.foot .stat .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.foot .stat .v{font-family:var(--f-display);font-weight:700;font-size:21px;line-height:1.1}
+table.itab{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;min-width:520px}
+table.itab th,table.itab td{padding:8px 10px;border-bottom:1px solid var(--line-2);text-align:left}
+table.itab th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+table.itab .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.itab tfoot td{font-weight:700;border-bottom:0}
+table.itab td.c{color:var(--warn);font-weight:700}
+table.itab th:first-child,table.itab td:first-child{padding-left:0}
+.clist{display:flex;flex-direction:column;gap:8px}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-2)}
+@media (max-width:560px){.crow{grid-template-columns:minmax(0,1fr)}}
+.cn{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}
+.ctot{font-family:var(--f-display);font-size:24px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.auth{max-width:460px;margin:24px auto 48px;padding-inline:16px}
+.auth .card{padding:24px;display:flex;flex-direction:column;gap:14px}
+.auth h2{font-family:var(--f-display);font-weight:700;font-size:28px;margin:2px 0 4px;line-height:1.1}
+.auth p{margin:0;color:var(--ink-2)}
+.muted{color:var(--ink-3)!important;font-size:14px}
+.msbtn{display:flex;gap:10px;align-items:center;justify-content:center;padding:11px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:15px;color:var(--ink)}
+.msbtn:hover{border-color:var(--ink-3)}
+.msbtn[disabled]{opacity:.6}
+.or{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.aform{display:flex;flex-direction:column;gap:12px}
+.errmsg{background:var(--bad-soft);color:var(--bad);padding:10px 12px;border-radius:8px;font-weight:500;font-size:14px}
+.okmsg{background:var(--ok-soft);color:var(--ok);padding:10px 12px;border-radius:8px;font-weight:500;font-size:14px}
+.userbox{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
+.userbox b{color:var(--ink);font-weight:600}
+.topr{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.rtag{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--info);background:var(--info-soft);padding:1px 7px;border-radius:999px;vertical-align:middle}
+</style>
+</head>
+<body>
+<!-- ======================================================================
+     Barra de abas do painel Estoque Apucarana.
+     Colada automaticamente por scripts/sincronizar_propostas.py.
+     Não edite aqui: edite o script.
+     ====================================================================== -->
+<style>
+.cv-tabbar{background:#8f0e28;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.cv-tabbar-in{max-width:1240px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cv-tabbar-in::-webkit-scrollbar{display:none}
+.cv-tabbar a{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;
+  padding:6px 13px;border-radius:20px;text-decoration:none;white-space:nowrap;
+  font-family:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,.78);
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  transition:background .15s}
+.cv-tabbar a.active{background:#fff;color:#8f0e28;border-color:#fff}
+.cv-tabbar a:not(.active):hover{background:rgba(255,255,255,.2)}
+.cv-tabbar a:not(.active):active{background:rgba(255,255,255,.26)}
+.cv-tabbar a:focus-visible{outline:2px solid #fff;outline-offset:2px}
+</style>
+<nav class="cv-tabbar" aria-label="Painéis">
+  <div class="cv-tabbar-in">
+    <a href="./index.html">📦 Estoque</a>
+    <a href="./tabela-precos.html">💰 Preços</a>
+    <a href="./pedidos-em-aberto.html">📋 Pedidos</a>
+    <a href="./propostas-retorno.html" class="active" aria-current="page">🤝 Propostas</a>
+    <a href="./acompanhamento-vendedores.html">📈 Vendedores</a>
+    <a href="./emails-padrao.html">📧 Emails</a>
+  </div>
+</nav>
+<script>
+/* No celular a faixa de abas rola na horizontal. Sem isto a aba ativa
+   (a 4a) nasce cortada na borda direita e parece que nao existe. */
+(function(){
+  var barra = document.querySelector('.cv-tabbar-in');
+  var ativa = barra && barra.querySelector('a.active');
+  if (!barra || !ativa) return;
+  var sobra = ativa.offsetLeft + ativa.offsetWidth - barra.clientWidth;
+  if (sobra > 0) barra.scrollLeft = sobra + 16;
+})();
+</script>
+
+<header class="top">
+  <div class="brand">
+    <div class="mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 2.5h7l3.5 3.5v11.5h-10.5z" stroke="#fff" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M8 11l1.8 1.8L13 9.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div>
+      <h1>Propostas &amp; Retorno</h1>
+      <p id="sub">Solicitação de proposta direto para os aprovadores</p>
+    </div>
+  </div>
+  <div class="topr">
+    <div class="seg-mode" id="modeSeg" role="group" aria-label="Modo" hidden>
+      <button id="m-sol" data-mode="solicitar" aria-pressed="true">Minhas propostas</button>
+      <button id="m-resp" data-mode="responder" aria-pressed="false">Aprovar <span class="badge" id="badge" hidden>0</span></button>
+    </div>
+    <div class="userbox" id="userbox" hidden><b id="uname"></b><button class="btn small ghost" id="btnSair">Sair</button></div>
+  </div>
+</header>
+<section class="auth" id="auth"><div class="card empty"><h3>Carregando…</h3></div></section>
+<div class="app" hidden>
+  <aside class="side" id="side"></aside>
+  <main class="main" id="main"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script type="module">
+/* =====================================================================
+   CONFIGURAÇÃO — preencha antes de publicar (veja o LEIA-ME.md)
+   ===================================================================== */
+const CONFIG = {
+  firebase: {
+    apiKey: "AIzaSyAN8Rf1c3wMkC4eNH8rOqML1qQ4CuWZbuI",
+    authDomain: "painel-propostas-retorno.firebaseapp.com",
+    projectId: "painel-propostas-retorno",
+    appId: "1:553375207674:web:f6ce6e2c991c291e56b943"
+  },
+  dominio: "gtf.com.br",                 // só e-mails deste domínio entram sem liberação
+  microsoft: { ativo: false, tenant: "COLE_O_ID_DO_LOCATARIO" }, // botão "Entrar com a conta Microsoft"
+  emailSenha: { ativo: true }            // entrar com e-mail e senha
+};
+/* ===================================================================== */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, OAuthProvider,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
+  updateProfile, signOut, reload } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, writeBatch, setDoc, getDoc, getDocs, onSnapshot, query, where, orderBy, limit }
+  from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const DEC={aprovada:'Aprovada',recusada:'Recusada',contra:'Contraproposta',info:'Pedir mais informações'};
+const ST={aguardando:'Aguardando retorno',aprovada:'Aprovada',recusada:'Recusada',contra:'Contraproposta',aceita:'Contraproposta aceita',info:'Faltam informações'};
+const S={auth:null,db:null,user:null,uid:null,admin:false,mode:'solicitar',L:{},cfg:{supervisores:[]},loaded:false,unsub:[],
+  sel:null,filtro:'aguardando',q:'',form:null,formErr:{},editId:null,rd:null,rdErr:null,respEdit:false,copy:null,busy:false,
+  seen:null,seenR:null,som:false,notif:false,audio:null,supTxt:null,authTab:'entrar',authMsg:null,authErr:null,authBusy:false};
+
+/* ---------- utils ---------- */
+const $=(s,el=document)=>el.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmt=(n,d=2)=>(Number(n)||0).toLocaleString('pt-BR',{maximumFractionDigits:d});
+function parseNum(v){if(v==null) return null;let s=String(v).trim().replace(/[R$\s%]/g,'');if(!s) return null;
+  if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); else if(/^\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,'');
+  const n=parseFloat(s);return isFinite(n)?n:null;}
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const fDT=iso=>{if(!iso) return '—';const d=new Date(iso);return isNaN(d)?'—':d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});};
+function fDur(ms){if(ms==null||!isFinite(ms)||ms<0) return '—';const m=Math.round(ms/60000);if(m<60) return m+' min';const h=Math.floor(m/60),mm=m%60;if(h<24) return h+'h'+(mm?' '+String(mm).padStart(2,'0')+'min':'');const d=Math.floor(h/24),hh=h%24;return d+'d'+(hh?' '+hh+'h':'');}
+const digits=s=>String(s||'').replace(/\D/g,'');
+function fmtDoc(s){const d=digits(s);if(d.length===11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');if(d.length===14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');return s||'';}
+function cpfOk(d){if(d.length!==11||/^(\d)\1+$/.test(d)) return false;for(let t=9;t<11;t++){let s=0;for(let i=0;i<t;i++) s+=+d[i]*(t+1-i);if(((s*10)%11)%10!==+d[t]) return false;}return true;}
+function cnpjOk(d){if(d.length!==14||/^(\d)\1+$/.test(d)) return false;const w=[6,5,4,3,2,9,8,7,6,5,4,3,2];for(const t of [12,13]){let s=0;for(let i=0;i<t;i++) s+=+d[i]*w[i+(13-t)];const r=s%11<2?0:11-s%11;if(r!==+d[t]) return false;}return true;}
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3600);}
+function handleErr(e){console.warn(e);const c=e&&e.code;
+  if(c==='permission-denied') toast('Sem permissão para isso. Confira se você entrou com o e-mail certo.');
+  else if(c==='unavailable') toast('Sem conexão. Tente de novo em instantes.');
+  else toast('Não foi possível salvar agora. Tente de novo em instantes.');}
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function recall(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function beep(){if(!S.som) return;try{const a=S.audio||(S.audio=new (window.AudioContext||window.webkitAudioContext)());const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(.2,a.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.35);o.start();o.stop(a.currentTime+.4);}catch(e){}}
+function desk(title,body){if(!S.notif||!('Notification' in window)||Notification.permission!=='granted') return;try{new Notification(title,{body});}catch(e){}}
+
+/* ---------- data ---------- */
+const pkg=v=>brl(v)+'/kg';
+const itens=x=>Array.isArray(x.itens)?x.itens:[];
+function tot(x){let kg=0,rs=0;const its=itens(x);for(const i of its){const q=Number(i.qtd)||0;kg+=q;rs+=q*(Number(i.valor)||0);}return {n:its.length,kg,rs,med:kg?rs/kg:0};}
+function cprice(r,k,i){return r&&r.cvi&&r.cvi[k]!=null?r.cvi[k]:i.valor;}
+function totContra(x,r){let rs=0;itens(x).forEach((i,k)=>{rs+=(Number(i.qtd)||0)*(Number(cprice(r,k,i))||0);});return rs;}
+const nItens=n=>n+(n===1?' item':' itens');
+const dec2=v=>v==null||v===''?'':String(v).replace('.',',');
+const get=id=>S.L[id]||null;
+const cur=x=>x&&x.resposta&&(x.resposta.versao||1)>=(x.versao||1)?x.resposta:null;
+function status(x){if(!x) return 'aguardando';const r=cur(x);if(!r) return 'aguardando';
+  if(r.dec==='contra'&&x.aceite&&x.aceite.versao===x.versao) return 'aceita';return r.dec;}
+function list(onlyMine){return Object.entries(S.L).filter(([,x])=>!onlyMine||x.uid===S.uid).map(([id,x])=>({id,x,st:status(x)}));}
+function minhas(){return list(true).filter(i=>!i.x.oculta);}
+const domingoSP=()=>new Date(Date.now()-3*36e5).getUTCDay()===0;
+function nextNum(){let m=0;for(const i of list(true)) m=Math.max(m,i.x.n||0);return m+1;}
+const vend=x=>x.vendedorNome||x.vendedorEmail||'Vendedor';
+const isRep=x=>!String(x.vendedorEmail||'').toLowerCase().endsWith('@'+CONFIG.dominio);
+const emailOk=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+const meuNome=()=>(S.user&&(S.user.displayName||S.user.email))||'Você';
+
+/* ---------- writes ---------- */
+const blankItem=()=>({produto:'',qtd:'',valor:''});
+const itemEmpty=it=>!String(it.produto||'').trim()&&!String(it.qtd||'').trim()&&!String(it.valor||'').trim();
+function blankForm(){return {nome:recall('nome')||(S.user&&S.user.displayName)||'',cliente:'',cod:'',doc:'',supervisor:recall('sup')||'',itens:[blankItem()],desc:'',obs:''};}
+function validate(f){const e={};
+  if(!f.nome.trim()) e.nome='Informe o seu nome.';
+  if(!f.cliente.trim()) e.cliente='Informe o cliente.';
+  const d=digits(f.doc); if(d&&(d.length===11?!cpfOk(d):d.length===14?!cnpjOk(d):true)) e.doc='CNPJ ou CPF inválido. Confira os dígitos ou deixe em branco.';
+  let any=false;
+  f.itens.forEach((it,k)=>{if(itemEmpty(it)) return;any=true;
+    if(!it.produto.trim()) e['i'+k+'produto']='Informe o produto.';
+    const q=parseNum(it.qtd); if(!q||q<=0) e['i'+k+'qtd']='Informe os kg.';
+    const v=parseNum(it.valor); if(!v||v<=0) e['i'+k+'valor']='Informe o R$/kg.';});
+  if(!any) e.i0produto='Adicione pelo menos um item.';
+  const ds=f.desc===''?0:parseNum(f.desc); if(ds==null||ds<0||ds>100) e.desc='Desconto entre 0 e 100%.';
+  if(S.cfg.supervisores.length&&!f.supervisor) e.supervisor='Escolha seu supervisor.';
+  return e;}
+function formBody(f){return {vendedorNome:f.nome.trim(),cliente:f.cliente.trim(),cod:String(f.cod||'').trim().slice(0,40),doc:digits(f.doc),supervisor:f.supervisor||'',
+  itens:f.itens.filter(it=>!itemEmpty(it)).map(it=>({produto:it.produto.trim(),qtd:Math.round(parseNum(it.qtd)*1000)/1000,valor:Math.round(parseNum(it.valor)*100)/100})),
+  desc:f.desc===''?0:parseNum(f.desc),obs:f.obs.trim()};}
+async function enviar(){
+  const f=S.form; const e=validate(f); S.formErr=e; if(Object.keys(e).length){render();toast('Confira os campos marcados.');return;}
+  if(S.busy) return; S.busy=true; render();
+  const now=new Date().toISOString(); const b=formBody(f); store('sup',b.supervisor); store('nome',b.vendedorNome);
+  try{
+    if(S.editId){
+      const x=get(S.editId);
+      await updateDoc(doc(S.db,'propostas',S.editId),{...b,versao:(x.versao||1)+1,enviadaEm:now,envios:[...(x.envios||[x.enviadaEm]),now],aceite:null});
+      S.sel=S.editId; toast('Nova versão enviada para os aprovadores.');
+    }else{
+      const ref=await addDoc(collection(S.db,'propostas'),{...b,uid:S.uid,vendedorEmail:(S.user.email||'').toLowerCase(),n:nextNum(),versao:1,criadaEm:now,enviadaEm:now,envios:[now],aceite:null});
+      S.sel=ref.id; toast('Proposta enviada. Você recebe o retorno aqui.');
+    }
+    S.form=null; S.editId=null; S.formErr={}; store('sel',S.sel);
+  }catch(err){handleErr(err);}
+  S.busy=false; render(true);
+}
+async function aceitar(id){const x=get(id);if(!x||S.busy) return;S.busy=true;render();
+  try{await updateDoc(doc(S.db,'propostas',id),{aceite:{versao:x.versao,em:new Date().toISOString()}});toast('Contraproposta aceita.');}catch(e){handleErr(e);}
+  S.busy=false;render();}
+async function responder(){
+  const id=S.sel; const x=get(id); const rd=S.rd; if(!x||!rd) return;
+  if(!rd.dec){S.rdErr='Escolha um retorno.';render();return;}
+  if(rd.dec!=='aprovada'&&!rd.com.trim()){S.rdErr=rd.dec==='recusada'?'Explique o motivo da recusa.':rd.dec==='info'?'Diga o que falta na proposta.':'Explique a contraproposta.';render();return;}
+  let cvi=null,cd=null;
+  if(rd.dec==='contra'){cvi=itens(x).map((i,k)=>{const v=parseNum(rd.cvi[k]);return v&&v>0?Math.round(v*100)/100:null;});
+    if(rd.cvi.some((s,k)=>String(s||'').trim()&&cvi[k]==null)){S.rdErr='Confira os preços da contraproposta.';render();return;}
+    cd=rd.cd===''?null:parseNum(rd.cd);
+    if(cd!=null&&(cd<0||cd>100)){S.rdErr='Desconto entre 0 e 100%.';render();return;}
+    if(cvi.every(v=>v==null)&&cd==null){S.rdErr='Informe um novo preço por kg em pelo menos um item, ou um desconto.';render();return;}}
+  if(S.busy) return; S.busy=true; S.rdErr=null; render();
+  const now=new Date().toISOString(); const prev=x.resposta;
+  const anteriores=prev?[...(x.anteriores||[]),prev]:(x.anteriores||[]);
+  const resposta={dec:rd.dec,com:rd.com.trim(),cvi,cd,por:S.uid,porNome:meuNome(),em:now,versao:x.versao||1};
+  try{await updateDoc(doc(S.db,'propostas',id),{resposta,anteriores});S.rd=null;S.respEdit=false;toast('Retorno enviado para '+vend(x)+'.');}
+  catch(e){handleErr(e);}
+  S.busy=false; render();
+}
+async function limparMinhas(){
+  const alvo=minhas().filter(i=>i.st!=='aguardando'); if(!alvo.length||S.busy) return;
+  if(!confirm('Limpar '+alvo.length+(alvo.length===1?' proposta respondida':' propostas respondidas')+' da sua lista?\n\nAs que ainda aguardam retorno continuam aparecendo.')) return;
+  S.busy=true; render();
+  try{for(let k=0;k<alvo.length;k+=400){const b=writeBatch(S.db);alvo.slice(k,k+400).forEach(i=>b.update(doc(S.db,'propostas',i.id),{oculta:true}));await b.commit();}
+    if(alvo.some(i=>i.id===S.sel)) S.sel=null; toast('Sua lista foi limpa.');}
+  catch(e){handleErr(e);}
+  S.busy=false; render();
+}
+async function limparTodas(){
+  const ids=Object.keys(S.L); if(!ids.length||S.busy) return;
+  if(!domingoSP()){toast('A limpeza geral só pode ser feita no domingo.');return;}
+  const r=prompt('Isso EXCLUI DE VEZ '+ids.length+' propostas de todos os vendedores e representantes. Não dá para desfazer.\n\nSe já baixou a planilha e quer continuar, digite LIMPAR:');
+  if(r==null) return; if(r.trim().toUpperCase()!=='LIMPAR'){toast('Limpeza cancelada.');return;}
+  S.busy=true; render();
+  try{for(let k=0;k<ids.length;k+=400){const b=writeBatch(S.db);ids.slice(k,k+400).forEach(id=>b.delete(doc(S.db,'propostas',id)));await b.commit();}
+    S.sel='__hist'; toast('Propostas excluídas.');}
+  catch(e){handleErr(e);}
+  S.busy=false; render();
+}
+async function saveSup(txt){const arr=[...new Set(txt.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean))];
+  try{await setDoc(doc(S.db,'config','geral'),{supervisores:arr},{merge:true});S.supTxt=null;toast('Lista de supervisores salva.');}catch(e){handleErr(e);}}
+
+/* ---------- login ---------- */
+const noDominio=e=>String(e||'').toLowerCase().endsWith('@'+CONFIG.dominio);
+function authErrMsg(e){const c=(e&&e.code)||'';
+  if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')) return 'E-mail ou senha incorretos.';
+  if(c.includes('email-already-in-use')) return 'Este e-mail já tem acesso. Use “Entrar” ou “Esqueci a senha”.';
+  if(c.includes('weak-password')) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if(c.includes('too-many-requests')) return 'Muitas tentativas. Aguarde alguns minutos.';
+  if(c.includes('popup-closed')) return 'A janela de login foi fechada antes de terminar.';
+  if(c.includes('unauthorized-domain')) return 'Este endereço do site não está autorizado no Firebase (veja o LEIA-ME, passo 2).';
+  if(c.includes('account-exists-with-different-credential')) return 'Este e-mail já tem acesso com senha. Entre com e-mail e senha.';
+  if(c.includes('operation-not-allowed')) return 'Este tipo de login não está ativado no Firebase.';
+  return 'Não foi possível entrar. '+(e&&e.message?e.message:'');}
+async function entrarMicrosoft(){
+  S.authErr=null;S.authBusy=true;renderAuth();
+  const p=new OAuthProvider('microsoft.com');
+  p.setCustomParameters({tenant:CONFIG.microsoft.tenant,prompt:'select_account'});
+  try{await signInWithPopup(S.auth,p);}
+  catch(e){if(e&&e.code==='auth/popup-blocked'){await signInWithRedirect(S.auth,p);return;}S.authErr=authErrMsg(e);}
+  S.authBusy=false;renderAuth();
+}
+async function entrarEmail(){
+  const em=$('#a-email').value.trim().toLowerCase(),pw=$('#a-senha')?$('#a-senha').value:'';
+  S.authErr=null;S.authMsg=null;
+  if(!emailOk(em)){S.authErr='Digite um e-mail válido.';renderAuth();return;}
+  S.authBusy=true;renderAuth();
+  try{
+    if(S.authTab==='entrar') await signInWithEmailAndPassword(S.auth,em,pw);
+    else if(S.authTab==='criar'){
+      const nm=($('#a-nome')?$('#a-nome').value:'').trim(); if(!nm){S.authErr='Informe seu nome.';S.authBusy=false;renderAuth();return;}
+      const c=await createUserWithEmailAndPassword(S.auth,em,pw); await updateProfile(c.user,{displayName:nm}); await sendEmailVerification(c.user);
+    }else{await sendPasswordResetEmail(S.auth,em);S.authMsg='Enviamos um link para '+em+'. Abra o e-mail e crie a nova senha.';S.authTab='entrar';}
+  }catch(e){S.authErr=authErrMsg(e);}
+  S.authBusy=false;renderAuth();
+}
+function renderAuth(){
+  const keep={};['a-nome','a-email','a-senha'].forEach(id=>{const el=document.getElementById(id);if(el) keep[id]=el.value;});
+  _renderAuth();
+  Object.keys(keep).forEach(id=>{const el=document.getElementById(id);if(el&&keep[id]) el.value=keep[id];});
+}
+function _renderAuth(){
+  const a=$('#auth'); $('.app').hidden=true; a.hidden=false; $('#userbox').hidden=true; $('#modeSeg').hidden=true;
+  const u=S.user;
+  if(CONFIG.firebase.apiKey==='COLE_AQUI'){a.innerHTML=`<div class="card"><h2>Falta configurar</h2><p>Abra o arquivo index.html, preencha o bloco CONFIG com os dados do seu projeto Firebase e publique de novo. O passo a passo está no LEIA-ME.md.</p></div>`;return;}
+  if(u&&S.semAcesso){a.innerHTML=`<div class="card"><h2>Acesso ainda não liberado</h2><p>Você entrou como <b>${esc(u.email||'sem e-mail')}</b>. Representantes precisam ser liberados por um aprovador antes do primeiro uso.</p><p>Peça ao seu contato na Gtf para liberar este e-mail em <b>Representantes</b> e depois clique em Verificar de novo.</p><button class="btn primary" id="btnVerificar">Verificar de novo</button><button class="btn ghost" id="btnSair2">Sair e trocar de conta</button></div>`;return;}
+  if(u&&!u.emailVerified&&u.providerData.some(p=>p.providerId==='password')){
+    a.innerHTML=`<div class="card"><h2>Confirme seu e-mail</h2><p>Enviamos um link de confirmação para <b>${esc(u.email)}</b>. Abra o e-mail, clique no link e depois volte aqui. Se não aparecer, confira o lixo eletrônico.</p>${S.authMsg?`<div class="okmsg">${esc(S.authMsg)}</div>`:''}<button class="btn primary" id="btnJaConfirmei">Já confirmei</button><button class="btn" id="btnReenviarEmail">Reenviar e-mail</button><button class="btn ghost" id="btnSair2">Sair</button></div>`;return;}
+  const t=S.authTab;
+  a.innerHTML=`<div class="card"><div><div class="eyebrow">Gtf · acesso restrito</div><h2>Entrar no painel</h2><p class="muted">Cada vendedor ou representante vê só as próprias propostas. Os aprovadores veem todas.</p></div>
+    ${CONFIG.microsoft.ativo?`<button class="msbtn" id="btnMs" ${S.authBusy?'disabled':''}><svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>Funcionário Gtf: entrar com a conta Microsoft</button>`:''}
+    ${CONFIG.microsoft.ativo&&CONFIG.emailSenha.ativo?'<div class="or">representantes e demais</div>':''}
+    ${CONFIG.emailSenha.ativo?`<div class="tabs chips">${[['entrar','Entrar'],['criar','Criar acesso'],['esqueci','Esqueci a senha']].map(([k,l])=>`<button class="chip" data-at="${k}" aria-pressed="${t===k}">${l}</button>`).join('')}</div>
+    <form id="aform" class="aform" novalidate>
+      ${t==='criar'?`<div class="field"><label for="a-nome">Seu nome</label><input id="a-nome" autocomplete="name" placeholder="Como aparece para os aprovadores"></div>`:''}
+      <div class="field"><label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" placeholder="seu@email.com">${t==='criar'?'<span class="hint">Use o e-mail que você passou para a Gtf. Vamos mandar um link de confirmação.</span>':''}</div>
+      ${t!=='esqueci'?`<div class="field"><label for="a-senha">Senha</label><input id="a-senha" type="password" autocomplete="${t==='criar'?'new-password':'current-password'}" placeholder="${t==='criar'?'Mínimo de 6 caracteres':''}"></div>`:''}
+      <button class="btn primary" type="submit" ${S.authBusy?'disabled':''}>${t==='entrar'?'Entrar':t==='criar'?'Criar acesso':'Enviar link para nova senha'}</button>
+    </form>`:''}
+    ${S.authErr?`<div class="errmsg">${esc(S.authErr)}</div>`:''}${S.authMsg?`<div class="okmsg">${esc(S.authMsg)}</div>`:''}</div>`;
+}
+
+/* ---------- render ---------- */
+function render(scrollTop){
+  if(!S.user||!S.loaded) return;
+  $('#auth').hidden=true; $('.app').hidden=false;
+  const ub=$('#userbox'); ub.hidden=false; $('#uname').textContent=meuNome();
+  const ae=document.activeElement;const aid=ae&&ae.id;let st=null,en=null;
+  if(aid&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')){try{st=ae.selectionStart;en=ae.selectionEnd}catch(e){}}
+  $('#modeSeg').hidden=!S.admin;
+  $('#m-sol').setAttribute('aria-pressed',S.mode==='solicitar'); $('#m-resp').setAttribute('aria-pressed',S.mode==='responder');
+  const pend=S.admin?list(false).filter(i=>i.st==='aguardando').length:0;
+  const bd=$('#badge'); bd.hidden=!pend; bd.textContent=pend;
+  document.title=(pend?'('+pend+') ':'')+'Propostas & Retorno';
+  $('#sub').textContent=S.mode==='responder'?'Propostas de todos os vendedores · só aprovadores veem esta aba':'Cada vendedor vê só as próprias propostas';
+  renderSide(); renderMain();
+  if(aid){const el=document.getElementById(aid);if(el&&el!==document.activeElement&&!el.disabled){el.focus({preventScroll:true});try{if(st!=null) el.setSelectionRange(st,en)}catch(e){}}}
+  if(scrollTop===true) window.scrollTo({top:0});
+}
+function sortItems(items){
+  return items.sort((a,b)=>{const wa=a.st==='aguardando'?0:1,wb=b.st==='aguardando'?0:1;if(wa!==wb) return wa-wb;
+    const ta=new Date(a.x.enviadaEm),tb=new Date(b.x.enviadaEm);return wa===0?ta-tb:tb-ta;});
+}
+function itemBtn(i,showVend){
+  const r=cur(i.x); const wait=i.st==='aguardando'; const t=tot(i.x);
+  const when=wait?'aguardando há '+fDur(Date.now()-new Date(i.x.enviadaEm)):'respondida '+fDT(r&&r.em);
+  return `<button class="pitem" data-sel="${esc(i.id)}" aria-current="${S.sel===i.id}"><span class="pn">${esc(i.x.cliente)}</span><span class="pill st-${i.st}">${esc(ST[i.st])}</span><span class="pv num">${showVend?esc(vend(i.x))+(isRep(i.x)?' (rep.)':'')+' · ':''}${nItens(t.n)} · ${fmt(t.kg,0)} kg · ${brl(t.rs)}</span><span class="pd num">Proposta ${i.x.n||''}${(i.x.versao||1)>1?' · v'+i.x.versao:''} · ${when}</span></button>`;
+}
+function renderSide(){
+  const side=$('#side'); let h='';
+  if(S.mode==='solicitar'){
+    const items=sortItems(minhas()); const nLimp=items.filter(i=>i.st!=='aguardando').length;
+    h+=`<div class="side-head"><h2>Minhas propostas</h2><button class="btn small primary" id="btnNova">+ Nova proposta</button></div><div class="plist">`;
+    if(S.sel==='__nova') h+=`<button class="pitem" aria-current="true"><span class="pn">${S.editId?'Nova versão':'Nova proposta'}</span><span class="pill st-aguardando">Rascunho</span><span class="pd">Ainda não enviada</span></button>`;
+    for(const i of items) h+=itemBtn(i,false);
+    if(!items.length&&S.sel!=='__nova') h+=`<div class="empty-side">Você ainda não enviou propostas.</div>`;
+    h+=`</div><div class="sidebox"><div class="lock"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex:none;margin-top:2px"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.5"/></svg><span>Suas propostas e retornos só aparecem para você e para os aprovadores. Outros vendedores não veem nada.</span></div>
+      <label class="toggle"><input type="checkbox" id="som" ${S.som?'checked':''}> Som quando chegar retorno</label>
+      <button class="btn small danger" id="btnLimparMinhas" ${nLimp&&!S.busy?'':'disabled'}>Limpar minhas propostas${nLimp?' ('+nLimp+')':''}</button>
+      <span>Tira da sua lista as propostas já respondidas. As que aguardam retorno continuam.</span></div>`;
+  }else{
+    const all=list(false); const c={aguardando:0,respondidas:0,todas:all.length}; for(const i of all) i.st==='aguardando'?c.aguardando++:c.respondidas++;
+    let items=all.filter(i=>S.filtro==='todas'||(S.filtro==='aguardando'?i.st==='aguardando':i.st!=='aguardando'));
+    if(S.q){const q=norm(S.q);items=items.filter(i=>norm(i.x.cliente+' '+vend(i.x)+' '+(i.x.vendedorEmail||'')+' '+itens(i.x).map(z=>z.produto).join(' ')+' '+(i.x.supervisor||'')+' '+i.x.doc+' '+(i.x.cod||'')).includes(q));}
+    sortItems(items);
+    h+=`<div class="side-head"><h2>Propostas recebidas</h2></div>
+    <div class="toolbar"><div class="search"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6"/></svg><input id="q" type="search" placeholder="Cliente, vendedor, produto, CNPJ" value="${esc(S.q)}" autocomplete="off"></div></div>
+    <div class="chips" role="group" aria-label="Filtro">${[['aguardando','Aguardando'],['respondidas','Respondidas'],['todas','Todas']].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${S.filtro===k}">${l} <span class="num">${c[k]}</span></button>`).join('')}</div>
+    <div class="plist">${items.map(i=>itemBtn(i,true)).join('')||`<div class="empty-side">${S.filtro==='aguardando'?'Nenhuma proposta aguardando retorno.':'Nada encontrado.'}</div>`}</div>
+    <button class="btn" data-sel="__acessos" style="justify-content:flex-start;${S.sel==='__acessos'?'border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)':''}">Representantes <span class="num" style="color:var(--ink-3);font-weight:500">${(S.acessos||[]).filter(a=>a.ativo).length}</span></button>
+    <button class="btn" data-sel="__hist" style="justify-content:flex-start;${S.sel==='__hist'?'border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)':''}">Resumo e histórico</button>
+    <div class="sidebox"><label class="toggle"><input type="checkbox" id="som" ${S.som?'checked':''}> Som quando chegar proposta</label>
+    ${'Notification' in window?`<label class="toggle"><input type="checkbox" id="notif" ${S.notif&&Notification.permission==='granted'?'checked':''}> Aviso na tela do computador</label>`:''}
+    <span>Os avisos aparecem enquanto o painel estiver aberto em alguma aba.</span></div>`;
+  }
+  side.innerHTML=h;
+}
+function renderMain(){
+  const m=$('#main');
+  if(S.mode==='responder'){
+    if(S.sel==='__hist') return renderHist(m);
+    if(S.sel==='__acessos') return renderAcessos(m);
+    const id=S.sel&&get(S.sel)?S.sel:null;
+    if(!id){m.innerHTML=`<div class="card empty"><h3>Escolha uma proposta</h3><p>As propostas que chegam aparecem na lista ao lado, as mais antigas primeiro.</p></div>`;return;}
+    return renderDetail(m,id,true);
+  }
+  if(S.sel==='__nova') return renderForm(m);
+  const id=S.sel&&get(S.sel)&&get(S.sel).uid===S.uid&&!get(S.sel).oculta?S.sel:null;
+  if(!id){m.innerHTML=`<div class="card empty"><h3>Envie sua primeira proposta</h3><p>Informe o cliente e os itens, com a quantidade em kg e o preço por kg. A proposta vai direto para os aprovadores e o retorno aparece aqui.</p><p style="margin-top:14px"><button class="btn primary" id="btnNova2">+ Nova proposta</button></p></div>`;return;}
+  renderDetail(m,id,false);
+}
+function fld(id,label,val,opts={}){
+  const e=S.formErr[id]; const inp=opts.area?`<textarea id="f-${id}" data-f="${id}" rows="3" placeholder="${esc(opts.ph||'')}">${esc(val)}</textarea>`
+    :opts.affix?`<div class="affix">${opts.pre?`<span>${opts.pre}</span>`:''}<input id="f-${id}" data-f="${id}" inputmode="${opts.im||'text'}" autocomplete="off" placeholder="${esc(opts.ph||'')}" value="${esc(val)}">${opts.post?`<span>${opts.post}</span>`:''}</div>`
+    :`<input id="f-${id}" data-f="${id}" inputmode="${opts.im||'text'}" autocomplete="off" placeholder="${esc(opts.ph||'')}" value="${esc(val)}">`;
+  return `<div class="field${e?' bad':''}${opts.full?' full':''}"><label for="f-${id}">${label}</label>${inp}${e?`<span class="err">${esc(e)}</span>`:(opts.hint?`<span class="hint" id="h-${id}">${opts.hint}</span>`:'')}</div>`;
+}
+function docHint(v){const d=digits(v);if(!d) return 'Pode deixar em branco';if(d.length===11) return cpfOk(d)?'CPF '+fmtDoc(d)+' ✓':'CPF com dígito inválido';if(d.length===14) return cnpjOk(d)?'CNPJ '+fmtDoc(d)+' ✓':'CNPJ com dígito inválido';return d.length+' dígitos · CPF tem 11, CNPJ tem 14';}
+function rowTot(it){const q=parseNum(it.qtd),v=parseNum(it.valor);return q>0&&v>0?brl(q*v):'—';}
+function formTot(f){let kg=0,rs=0,n=0;for(const it of f.itens){if(itemEmpty(it)) continue;n++;const q=parseNum(it.qtd)||0,v=parseNum(it.valor)||0;kg+=q;rs+=q*v;}return {n,kg,rs,med:kg?rs/kg:0};}
+function refreshFoot(){const t=formTot(S.form);const set=(id,v)=>{const e=document.getElementById(id);if(e) e.textContent=v;};set('ft-n',t.n);set('ft-kg',fmt(t.kg)+' kg');set('ft-rs',brl(t.rs));set('ft-med',t.kg?pkg(t.med):'—');}
+function rdTot(x,rd){let rs=0;itens(x).forEach((i,k)=>{const v=parseNum(rd.cvi[k]);rs+=(Number(i.qtd)||0)*(v&&v>0?v:Number(i.valor)||0);});return rs;}
+function itemsEditor(f){
+  let h=`<div class="sec"><div class="ihead"><h3>Itens da proposta</h3><span class="hint">Preço sempre por quilo</span></div>
+    <div class="icols" aria-hidden="true"><span>Produto</span><span>Quantidade</span><span>Preço</span><span class="r">Total</span><span></span></div>`;
+  f.itens.forEach((it,k)=>{const ep=S.formErr['i'+k+'produto'],eq=S.formErr['i'+k+'qtd'],ev=S.formErr['i'+k+'valor'];
+    h+=`<div class="irow">
+      <div class="field ip${ep?' bad':''}"><label class="sr" for="it-${k}-produto">Produto do item ${k+1}</label><input id="it-${k}-produto" data-it="${k}" data-ik="produto" placeholder="Produto ou código" autocomplete="off" value="${esc(it.produto)}">${ep?`<span class="err">${esc(ep)}</span>`:''}</div>
+      <div class="field iq${eq?' bad':''}"><label class="sr" for="it-${k}-qtd">Quantidade em kg do item ${k+1}</label><div class="affix"><input id="it-${k}-qtd" data-it="${k}" data-ik="qtd" inputmode="decimal" placeholder="0" autocomplete="off" value="${esc(it.qtd)}"><span>kg</span></div>${eq?`<span class="err">${esc(eq)}</span>`:''}</div>
+      <div class="field iv${ev?' bad':''}"><label class="sr" for="it-${k}-valor">Preço por kg do item ${k+1}</label><div class="affix"><span>R$</span><input id="it-${k}-valor" data-it="${k}" data-ik="valor" inputmode="decimal" placeholder="0,00" autocomplete="off" value="${esc(it.valor)}"><span>/kg</span></div>${ev?`<span class="err">${esc(ev)}</span>`:''}</div>
+      <div class="itot num" id="it-tot-${k}">${rowTot(it)}</div>
+      <button class="btn small ghost irm" data-rm="${k}" aria-label="Remover item ${k+1}" ${f.itens.length===1?'disabled':''}>×</button></div>`;});
+  return h+`<div class="iadd"><button class="btn small" id="btnAddItem">+ Adicionar item</button><span class="hint">Enter no preço do último item também abre uma linha nova</span></div></div>`;
+}
+function renderForm(m){
+  const f=S.form||(S.form=blankForm()); const sups=S.cfg.supervisores;
+  const ex=S.editId?get(S.editId):null; const r=ex?cur(ex)||ex.resposta:null;
+  let h=`<section class="card"><div class="phead"><div><div class="eyebrow num">${ex?`Proposta ${ex.n} · nova versão ${(ex.versao||1)+1}`:`Proposta ${nextNum()} · nova`}</div><h2>${ex?'Ajustar e reenviar':'Solicitar proposta'}</h2></div>
+    <div class="actions"><button class="btn small ghost" id="btnCancelar">Cancelar</button></div></div>`;
+  if(r){const cl=r.dec==='contra'?itens(ex).map((i,k)=>r.cvi&&r.cvi[k]!=null?`${i.produto}: ${pkg(r.cvi[k])} (pedido ${pkg(i.valor)})`:'').filter(Boolean):[];
+    h+=`<div class="note"><b>Retorno anterior (${esc(DEC[r.dec])}):</b> ${esc(r.com||'—')}${cl.length?'\n'+esc(cl.join('\n')):''}${r.dec==='contra'&&r.cd!=null?'\nDesconto liberado: '+fmt(r.cd)+'%':''}</div>`;}
+  h+=`<div class="sec"><div class="grid">
+    ${fld('nome','Seu nome',f.nome,{ph:'Quem está enviando a proposta'})}
+    ${fld('cliente','Cliente',f.cliente,{ph:'Razão social ou nome'})}
+    ${fld('cod','Código do cliente (opcional)',f.cod||'',{ph:'Código no sistema'})}
+    ${fld('doc','CNPJ / CPF do cliente (opcional)',f.doc,{ph:'00.000.000/0000-00',im:'numeric',hint:esc(docHint(f.doc))})}
+    ${sups.length?`<div class="field${S.formErr.supervisor?' bad':''}"><label for="f-supervisor">Seu supervisor</label><select id="f-supervisor" data-f="supervisor"><option value="">Escolha…</option>${sups.map(s=>`<option ${f.supervisor===s?'selected':''}>${esc(s)}</option>`).join('')}</select>${S.formErr.supervisor?`<span class="err">${esc(S.formErr.supervisor)}</span>`:''}</div>`:fld('supervisor','Seu supervisor',f.supervisor,{ph:'Nome do supervisor'})}
+    ${fld('desc','Desconto pedido na proposta',f.desc,{ph:'0',im:'decimal',affix:true,post:'%',hint:'Deixe vazio se não houver'})}
+  </div></div>
+  ${itemsEditor(f)}
+  <div class="sec"><div class="grid">${fld('obs','Observações',f.obs,{area:true,full:true,ph:'Condição de pagamento, prazo de entrega, concorrente, urgência…'})}</div></div></section>`;
+  const t=formTot(f);
+  h+=`<div class="foot"><div class="card"><div class="stat"><span class="k">Itens</span><span class="v num" id="ft-n">${t.n}</span></div><div class="stat"><span class="k">Total kg</span><span class="v num" id="ft-kg">${fmt(t.kg)} kg</span></div><div class="stat"><span class="k">Total da proposta</span><span class="v num" id="ft-rs">${brl(t.rs)}</span></div><div class="stat"><span class="k">Preço médio</span><span class="v num" id="ft-med">${t.kg?pkg(t.med):'—'}</span></div><div class="grow"></div><button class="btn primary" id="btnEnviar" ${S.busy?'disabled':''}>${S.busy?'Enviando…':ex?'Reenviar proposta':'Enviar proposta'}</button></div></div>`;
+  m.innerHTML=h;
+}
+function timeline(x){
+  const c=cur(x),st=status(x),now=Date.now();
+  const s=(l,em,sub,cls)=>`<div class="tl-s ${cls||''}"><span class="tl-d"></span><span class="tl-l">${l}</span><span class="tl-t num">${em?fDT(em):'—'}</span>${sub?`<span class="tl-x num">${sub}</span>`:''}</div>`;
+  const t3=st==='aceita'?s('Contraproposta aceita',x.aceite.em,'',' done'):s('Aceite do vendedor',null,'aguardando o vendedor',' wait');
+  return `<div class="tl">${s((x.versao||1)>1?'Enviada · v'+x.versao:'Enviada',x.enviadaEm,(x.versao||1)>1?'1ª versão '+fDT(x.criadaEm):'',' done')}${s('Retorno',c&&c.em,c?'em '+fDur(new Date(c.em)-new Date(x.enviadaEm))+' · '+esc(c.porNome||''):'aguardando há '+fDur(now-new Date(x.enviadaEm)),c?' done':' wait')}${c&&c.dec==='contra'?t3:''}</div>`;
+}
+function verdictBox(r,cls,x){
+  return `<div class="verdict ${cls}"><div class="vt">${esc(cls==='aceita'?ST.aceita:DEC[r.dec])}</div>${r.com?`<div class="vc">${esc(r.com)}</div>`:''}
+    ${r.dec==='contra'?`<div class="vx"><div><span>Novo total</span><b class="num">${brl(totContra(x,r))}</b></div><div><span>Proposto</span><b class="num">${brl(tot(x).rs)}</b></div>${r.cd!=null?`<div><span>Desconto liberado</span><b class="num">${fmt(r.cd)}%</b></div>`:''}</div>`:''}
+    <div class="vm num">${esc(r.porNome||'')} · ${fDT(r.em)}</div></div>`;
+}
+function summaryText(x){const r=cur(x),st=status(x),t=tot(x);const contra=r&&r.dec==='contra';
+  return [`Proposta ${x.n} — ${x.cliente}`,`Vendedor: ${vend(x)}${isRep(x)?' (representante)':''}${x.supervisor?' · Supervisor: '+x.supervisor:''}`,x.cod?`Código do cliente: ${x.cod}`:'',x.doc?`CNPJ/CPF: ${fmtDoc(x.doc)}`:'',
+    ...itens(x).map((i,k)=>`• ${i.produto}: ${fmt(i.qtd)} kg × ${pkg(i.valor)} = ${brl(i.qtd*i.valor)}${contra&&r.cvi&&r.cvi[k]!=null?` → contra ${pkg(r.cvi[k])}`:''}`),
+    `Total: ${fmt(t.kg)} kg · ${brl(t.rs)} (média ${pkg(t.med)})${x.desc?' · Desconto: '+fmt(x.desc)+'%':''}`,x.obs?`Obs.: ${x.obs}`:'',`Status: ${ST[st]}`,
+    r?`Retorno: ${r.com||DEC[r.dec]}${contra?` · novo total ${brl(totContra(x,r))}${r.cd!=null?', desconto '+fmt(r.cd)+'%':''}`:''}`:''].filter(Boolean).join('\n');}
+function renderDetail(m,id,adm){
+  const x=get(id); const st=status(x); const c=cur(x);
+  let h=`<section class="card"><div class="phead"><div><div class="eyebrow num">${adm?esc(vend(x))+(isRep(x)?' · representante':'')+' · ':''}Proposta ${x.n}${(x.versao||1)>1?' · versão '+x.versao:''}</div><h2>${esc(x.cliente)} <span class="pill st-${st}">${esc(ST[st])}</span></h2></div>
+    <div class="actions"><button class="btn small" id="btnCopy">Copiar resumo</button>
+    ${!adm&&(st==='info'||st==='contra'||st==='recusada')?`<button class="btn small${st==='info'?' primary':''}" id="btnReenviar">${st==='info'?'Completar e reenviar':'Enviar nova versão'}</button>`:''}
+    ${adm&&c&&!S.respEdit?`<button class="btn small" id="btnAlterar">Alterar retorno</button>`:''}</div></div>`;
+  if(S.copy===id) h+=`<div class="copybox"><div class="flabel" style="margin-bottom:6px">Selecione e copie o texto</div><textarea id="copyArea" readonly>${esc(summaryText(x))}</textarea></div>`;
+  h+=timeline(x);
+  const t=tot(x); const showC=c&&c.dec==='contra'&&!(adm&&S.respEdit);
+  const vRs=showC?totContra(x,c):t.rs; const vMed=t.kg?vRs/t.kg:0;
+  h+=`<div class="sec"><dl class="data">
+    <div><dt>${showC?'Total da contraproposta':'Total da proposta'}</dt><dd class="big num">${brl(vRs)}${showC?'<small>Pedido: '+brl(t.rs)+'</small>':''}</dd></div>
+    <div><dt>Total em kg</dt><dd class="big num">${fmt(t.kg)} kg<small>${nItens(t.n)}</small></dd></div>
+    <div><dt>${showC?'Preço médio da contraproposta':'Preço médio'}</dt><dd class="big num">${pkg(vMed)}${showC?'<small>Pedido: '+pkg(t.med)+'</small>':''}</dd></div>
+    <div><dt>Desconto pedido</dt><dd>${x.desc?fmt(x.desc)+'%':'Sem desconto'}</dd></div>
+    <div><dt>Código do cliente</dt><dd class="mono">${x.cod?esc(x.cod):'Não informado'}</dd></div>
+    <div><dt>CNPJ / CPF</dt><dd class="mono">${x.doc?esc(fmtDoc(x.doc)):'Não informado'}</dd></div>
+    <div><dt>${adm?'Vendedor · supervisor':'Supervisor'}</dt><dd>${adm?esc(vend(x))+'<small>'+esc((x.vendedorEmail||'')+' · '+(x.supervisor||'supervisor não informado'))+'</small>':esc(x.supervisor||'Não informado')}</dd></div>
+  </dl></div>
+  <div class="sec"><h3>Itens</h3><div class="tbl-wrap"><table class="itab"><thead><tr><th>Produto</th><th class="n">Kg</th><th class="n">R$/kg</th><th class="n">Total</th>${showC?'<th class="n">Contraproposta</th><th class="n">Novo total</th>':''}</tr></thead><tbody>
+  ${itens(x).map((i,j)=>{const has=showC&&c.cvi&&c.cvi[j]!=null;const cp=cprice(showC?c:null,j,i);return `<tr><td>${esc(i.produto)}</td><td class="n">${fmt(i.qtd)}</td><td class="n">${brl(i.valor)}</td><td class="n">${brl(i.qtd*i.valor)}</td>${showC?`<td class="n${has?' c':''}">${has?brl(cp):'mantido'}</td><td class="n">${brl(i.qtd*cp)}</td>`:''}</tr>`;}).join('')}
+  </tbody><tfoot><tr><td>Total</td><td class="n">${fmt(t.kg)}</td><td class="n">${brl(t.med)}</td><td class="n">${brl(t.rs)}</td>${showC?`<td></td><td class="n">${brl(totContra(x,c))}</td>`:''}</tr></tfoot></table></div></div>`;
+  if(x.obs) h+=`<div class="note"><b>Observações do vendedor:</b> ${esc(x.obs)}</div>`;
+  if(c&&!(adm&&S.respEdit)){h+=`<div class="sec" style="padding-bottom:4px"><h3>Retorno</h3></div>`+verdictBox(c,st==='aceita'?'aceita':c.dec,x);}
+  const prevs=[...(x.anteriores||[]),...(x.resposta&&!c?[x.resposta]:[])];
+  if(prevs.length) h+=`<div class="sec"><h3>Retornos anteriores</h3><div class="prev">${prevs.slice().reverse().map(a=>`<div><b>${esc(DEC[a.dec])}</b> · v${a.versao||1} · ${esc(a.porNome||'')} · ${fDT(a.em)}${a.com?`<br>${esc(a.com)}`:''}</div>`).join('')}</div></div>`;
+  if(!adm&&st==='aguardando') h+=`<div class="note">Enviada aos aprovadores. O retorno aparece aqui assim que um deles responder.</div>`;
+  h+=`</section>`;
+  if(!adm&&st==='contra'){
+    h+=`<div class="foot"><div class="card"><span class="hint">O cliente aceita a contraproposta de ${brl(totContra(x,c))}?</span><div class="grow"></div><button class="btn" id="btnReenviar2">Enviar nova versão</button><button class="btn primary" id="btnAceitar" ${S.busy?'disabled':''}>Aceitar contraproposta</button></div></div>`;
+  }
+  if(adm&&(!c||S.respEdit)){
+    const rd=S.rd&&S.rd.id===id?S.rd:(S.rd={id,dec:S.respEdit&&c?c.dec:'',com:S.respEdit&&c?c.com||'':'',cvi:itens(x).map((i,j)=>S.respEdit&&c&&c.cvi&&c.cvi[j]!=null?dec2(c.cvi[j]):''),cd:S.respEdit&&c&&c.cd!=null?dec2(c.cd):''});
+    const ph={aprovada:'Comentário opcional para o vendedor',recusada:'Motivo da recusa (obrigatório)',contra:'Explique a contraproposta (obrigatório)',info:'O que falta na proposta (obrigatório)'}[rd.dec]||'Comentário para o vendedor';
+    h+=`<section class="card"><div class="phead" style="padding-bottom:6px"><div><div class="eyebrow">Só aprovadores</div><h2 style="font-size:24px">${S.respEdit?'Alterar retorno':'Dar retorno'}</h2></div>${S.respEdit?'<div class="actions"><button class="btn small ghost" id="btnCancelResp">Cancelar</button></div>':''}</div>
+      <div class="sec rpanel" style="border-top:0;padding-top:6px">
+      <div class="dec" role="group" aria-label="Retorno">${Object.keys(DEC).map(d=>`<button data-d="${d}" aria-pressed="${rd.dec===d}">${DEC[d]}</button>`).join('')}</div>
+      ${rd.dec==='contra'?`<div class="clist"><div class="flabel">Novo preço por kg em cada item (deixe vazio para manter o preço pedido)</div>${itens(x).map((i,k)=>`<div class="crow"><div class="cn"><b>${esc(i.produto)}</b><span class="sub2 num">${fmt(i.qtd)} kg · pedido ${pkg(i.valor)}</span></div><div class="affix"><span>R$</span><input id="r-cvi-${k}" data-cvi="${k}" inputmode="decimal" autocomplete="off" placeholder="${esc(dec2(i.valor))}" value="${esc(rd.cvi[k]||'')}"><span>/kg</span></div></div>`).join('')}
+        <div class="grid"><div class="field"><label for="r-cd">Desconto liberado</label><div class="affix"><input id="r-cd" data-r="cd" inputmode="decimal" autocomplete="off" placeholder="${esc(dec2(x.desc||0))}" value="${esc(rd.cd)}"><span>%</span></div><span class="hint">Pedido: ${x.desc?fmt(x.desc)+'%':'sem desconto'}</span></div><div class="field"><span class="flabel">Novo total</span><b id="r-tot" class="num ctot">${brl(rdTot(x,rd))}</b><span class="hint">Pedido: ${brl(tot(x).rs)}</span></div></div></div>`:''}
+      <div class="field"><label for="r-com">Comentário</label><textarea id="r-com" data-r="com" rows="3" placeholder="${esc(ph)}">${esc(rd.com)}</textarea>${S.rdErr?`<span class="err">${esc(S.rdErr)}</span>`:''}</div>
+      </div></section>
+      <div class="foot"><div class="card"><span class="hint">O retorno aparece só para ${esc(vend(x))}.</span><div class="grow"></div><button class="btn primary" id="btnResponder" ${S.busy||!rd.dec?'disabled':''}>${S.busy?'Enviando…':'Enviar retorno'}</button></div></div>`;
+  }
+  m.innerHTML=h;
+}
+function histRows(){return list(false).sort((a,b)=>new Date(b.x.enviadaEm)-new Date(a.x.enviadaEm)).map(i=>{const c=cur(i.x);return {...i,r:c,t:c?new Date(c.em)-new Date(i.x.enviadaEm):null};});}
+function renderHist(m){
+  const rows=histRows(); const now=Date.now(); const d30=now-30*864e5;
+  const rec=rows.filter(r=>new Date(r.x.enviadaEm)>=d30); const done=rec.filter(r=>r.r);
+  const tm=done.length?done.reduce((a,r)=>a+r.t,0)/done.length:null;
+  const ok=done.filter(r=>r.st==='aprovada'||r.st==='aceita').length;
+  const wait=rows.filter(r=>r.st==='aguardando'); const oldest=wait.length?Math.max(...wait.map(r=>now-new Date(r.x.enviadaEm))):null;
+  m.innerHTML=`<section class="card"><div class="phead"><div><div class="eyebrow">Últimos 30 dias</div><h2>Resumo e histórico</h2></div><div class="actions"><button class="btn small" id="btnCsv">Baixar planilha (.csv)</button></div></div>
+    <div class="summary">
+      <div><div class="k">Aguardando</div><div class="v num">${wait.length} <small>${oldest!=null?'mais antiga há '+fDur(oldest):''}</small></div></div>
+      <div><div class="k">Tempo médio de retorno</div><div class="v num">${tm!=null?fDur(tm):'—'}</div></div>
+      <div><div class="k">Aprovadas</div><div class="v num">${done.length?Math.round(ok/done.length*100)+'%':'—'} <small>${ok} de ${done.length}</small></div></div>
+      <div><div class="k">Recebidas</div><div class="v num">${rec.length} <small>propostas</small></div></div>
+    </div></section>
+  <section class="card"><div class="tbl-wrap"><table class="hist"><thead><tr><th>Cliente</th><th>Vendedor</th><th class="n">Itens</th><th class="n">Kg</th><th class="n">Total</th><th class="n">Desc.</th><th>Enviada</th><th>Status</th><th class="n">Retorno em</th><th>Respondido por</th></tr></thead><tbody>
+  ${rows.map(r=>{const t=tot(r.x);return `<tr class="hrow" data-sel="${esc(r.id)}"><td><b>${esc(r.x.cliente)}</b><span class="sub2">Proposta ${r.x.n}${(r.x.versao||1)>1?' · v'+r.x.versao:''}</span></td><td>${esc(vend(r.x))}<span class="sub2">${esc(r.x.supervisor||'')}</span></td><td class="n">${t.n}</td><td class="n">${fmt(t.kg)}</td><td class="n">${brl(t.rs)}<span class="sub2">${pkg(t.med)}</span></td><td class="n">${r.x.desc?fmt(r.x.desc)+'%':'—'}</td><td class="num">${fDT(r.x.enviadaEm)}</td><td><span class="pill st-${r.st}">${esc(ST[r.st])}</span></td><td class="n">${r.t!=null?fDur(r.t):`<span style="color:var(--warn)">há ${fDur(now-new Date(r.x.enviadaEm))}</span>`}</td><td>${r.r?esc(r.r.porNome||''):'—'}</td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--ink-3)">Nenhuma proposta ainda.</td></tr>'}
+  </tbody></table></div></section>
+  <section class="card"><div class="phead" style="padding-bottom:4px"><div><div class="eyebrow">Configuração</div><h2 style="font-size:22px">Supervisores</h2></div></div>
+  <div class="sec" style="border-top:0;padding-top:4px"><div class="field"><label for="supTxt">Nomes que aparecem para o vendedor escolher, separados por vírgula</label><input id="supTxt" value="${esc(S.supTxt??S.cfg.supervisores.join(', '))}" placeholder="Ex.: Paulo Rizzato, Leonardo" autocomplete="off"></div><p style="margin:10px 0 0"><button class="btn small primary" id="btnSup">Salvar supervisores</button></p></div></section>
+  <section class="card"><div class="phead" style="padding-bottom:4px"><div><div class="eyebrow">Só aos domingos</div><h2 style="font-size:22px">Limpeza semanal</h2></div></div>
+  <div class="sec" style="border-top:0;padding-top:4px"><p class="muted">Exclui de vez as propostas de todos os vendedores e representantes (${rows.length} hoje). Baixe a planilha antes, porque não dá para desfazer.</p><p style="margin:10px 0 0"><button class="btn small danger" id="btnLimparTodas" ${rows.length&&domingoSP()&&!S.busy?'':'disabled'}>Limpar propostas de todos</button> ${domingoSP()?'':'<span class="muted" style="margin-left:8px">Disponível só no domingo.</span>'}</p></div></section>`;
+}
+function convite(email){return `Olá! Seu acesso ao painel de propostas da Gtf está liberado.\n\n1. Abra ${location.origin+location.pathname}\n2. Clique em "Criar acesso" e use o e-mail ${email}\n3. Crie uma senha e confirme pelo link que chega no seu e-mail\n\nDepois é só entrar com esse e-mail e senha para enviar suas propostas.`;}
+function renderAcessos(m){
+  const A=(S.acessos||[]).slice().sort((a,b)=>(b.ativo-a.ativo)||String(a.nome).localeCompare(String(b.nome)));
+  const na=S.na||(S.na={nome:'',email:'',err:null});
+  m.innerHTML=`<section class="card"><div class="phead"><div><div class="eyebrow">Só aprovadores</div><h2>Representantes</h2><p class="muted" style="margin:6px 0 0">Funcionários com e-mail @${esc(CONFIG.dominio)} entram direto. Representantes com outro e-mail precisam ser liberados aqui antes do primeiro acesso.</p></div></div>
+    <div class="sec"><h3>Liberar novo representante</h3><div class="grid">
+      <div class="field"><label for="na-nome">Nome</label><input id="na-nome" data-na="nome" autocomplete="off" placeholder="Nome do representante" value="${esc(na.nome)}"></div>
+      <div class="field"><label for="na-email">E-mail que ele vai usar</label><input id="na-email" data-na="email" type="email" autocomplete="off" placeholder="representante@gmail.com" value="${esc(na.email)}"></div>
+    </div>${na.err?`<div class="errmsg" style="margin-top:10px">${esc(na.err)}</div>`:''}<p style="margin:12px 0 0"><button class="btn primary" id="btnLiberar">Liberar acesso</button></p></div>
+    ${S.conv?`<div class="copybox"><div class="flabel" style="margin-bottom:6px">Mensagem para enviar ao representante (WhatsApp ou e-mail)</div><textarea id="convArea" readonly>${esc(convite(S.conv))}</textarea><p style="margin:8px 0 0"><button class="btn small" id="btnCopyConv">Copiar mensagem</button></p></div>`:''}
+  </section>
+  <section class="card"><div class="tbl-wrap"><table class="hist"><thead><tr><th>Nome</th><th>E-mail</th><th>Situação</th><th>Liberado em</th><th></th></tr></thead><tbody>
+  ${A.map(a=>`<tr><td><b>${esc(a.nome||'')}</b></td><td>${esc(a.id)}</td><td><span class="pill ${a.ativo?'st-aprovada':'st-recusada'}">${a.ativo?'Liberado':'Bloqueado'}</span></td><td class="num">${fDT(a.criadoEm)}</td><td style="text-align:right;white-space:nowrap"><button class="btn small" data-conv="${esc(a.id)}">Mensagem</button> <button class="btn small ghost" data-tog="${esc(a.id)}">${a.ativo?'Bloquear':'Liberar de novo'}</button></td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--ink-3)">Nenhum representante liberado ainda.</td></tr>'}
+  </tbody></table></div></section>`;
+}
+async function liberar(){
+  const na=S.na; const em=na.email.trim().toLowerCase(); const nm=na.nome.trim();
+  if(!nm){na.err='Informe o nome.';render();return;}
+  if(!emailOk(em)){na.err='Digite um e-mail válido.';render();return;}
+  if(noDominio(em)){na.err='E-mails @'+CONFIG.dominio+' já entram sem liberação.';render();return;}
+  try{await setDoc(doc(S.db,'acessos',em),{nome:nm,ativo:true,criadoEm:new Date().toISOString(),criadoPor:S.uid});S.na=null;S.conv=em;toast('Acesso liberado para '+nm+'.');}
+  catch(e){handleErr(e);}
+  render();
+}
+async function alternar(id){const a=(S.acessos||[]).find(z=>z.id===id);if(!a) return;
+  try{await updateDoc(doc(S.db,'acessos',id),{ativo:!a.ativo});toast(a.ativo?'Acesso bloqueado. As propostas antigas continuam no histórico.':'Acesso liberado de novo.');}catch(e){handleErr(e);}}
+function exportCsv(){
+  const q=v=>{const s=String(v??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const d=v=>v==null?'':String(Math.round(v*1000)/1000).replace('.',',');
+  const lines=[['Proposta','Versão','Vendedor','E-mail','Supervisor','Cliente','Código do cliente','CNPJ/CPF','Enviada','Status','Produto','Kg','Preço (R$/kg)','Total do item (R$)','Contraproposta (R$/kg)','Total da proposta (R$)','Desconto pedido (%)','Desconto liberado (%)','Retorno','Comentário','Respondido por','Tempo de retorno (h)']];
+  for(const r of histRows()){const t=tot(r.x);const contra=r.r&&r.r.dec==='contra';
+    itens(r.x).forEach((i,k)=>lines.push([r.x.n,r.x.versao||1,vend(r.x),r.x.vendedorEmail||'',r.x.supervisor||'',r.x.cliente,r.x.cod||'',fmtDoc(r.x.doc),fDT(r.x.enviadaEm),ST[r.st],i.produto,d(i.qtd),d(i.valor),d(Math.round(i.qtd*i.valor*100)/100),contra&&r.r.cvi&&r.r.cvi[k]!=null?d(r.r.cvi[k]):'',d(Math.round(t.rs*100)/100),d(r.x.desc||0),r.r&&r.r.cd!=null?d(r.r.cd):'',r.r?fDT(r.r.em):'',r.r?r.r.com:'',r.r?r.r.porNome||'':'',r.t!=null?d(Math.round(r.t/36e5*100)/100):'']));}
+  const blob=new Blob(['﻿'+lines.map(l=>l.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Propostas.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+}
+
+/* ---------- events ---------- */
+function openForm(editId){S.sel='__nova';S.editId=editId||null;S.formErr={};
+  if(editId){const x=get(editId);S.form={nome:x.vendedorNome||'',cliente:x.cliente,cod:x.cod||'',doc:fmtDoc(x.doc),supervisor:x.supervisor||'',itens:itens(x).map(i=>({produto:i.produto,qtd:dec2(i.qtd),valor:dec2(i.valor)})),desc:x.desc?dec2(x.desc):'',obs:x.obs||''};if(!S.form.itens.length) S.form.itens=[blankItem()];}
+  else S.form=blankForm(); render(true);}
+function addItem(){if(!S.form) return;S.form.itens.push(blankItem());render();const el=document.getElementById('it-'+(S.form.itens.length-1)+'-produto');if(el) el.focus();}
+document.addEventListener('keydown',ev=>{const el=ev.target;if(ev.key==='Enter'&&el.dataset&&el.dataset.ik==='valor'&&S.form&&+el.dataset.it===S.form.itens.length-1){ev.preventDefault();addItem();}});
+document.addEventListener('submit',ev=>{if(ev.target.id==='aform'){ev.preventDefault();entrarEmail();}});
+document.addEventListener('click',async ev=>{
+  const t=ev.target.closest('button,[data-sel]'); if(!t) return;
+  if(t.dataset.at){S.authTab=t.dataset.at;S.authErr=null;S.authMsg=null;renderAuth();return;}
+  if(t.dataset.mode){S.mode=t.dataset.mode;store('mode',S.mode);S.sel=null;S.rd=null;S.respEdit=false;S.copy=null;render(true);return;}
+  if(t.dataset.sel){S.sel=t.dataset.sel;S.rd=null;S.rdErr=null;S.respEdit=false;S.copy=null;if(S.mode==='solicitar') store('sel',S.sel);render(true);return;}
+  if(t.dataset.f&&t.classList.contains('chip')){S.filtro=t.dataset.f;render();return;}
+  if(t.dataset.d&&S.rd){S.rd.dec=t.dataset.d;S.rdErr=null;render();return;}
+  if(t.dataset.conv){S.conv=t.dataset.conv;render();return;}
+  if(t.dataset.tog){alternar(t.dataset.tog);return;}
+  if(t.dataset.rm!=null&&S.form){S.form.itens.splice(+t.dataset.rm,1);if(!S.form.itens.length) S.form.itens.push(blankItem());S.formErr={};render();return;}
+  switch(t.id){
+    case 'btnMs': entrarMicrosoft(); break;
+    case 'btnSair': case 'btnSair2': signOut(S.auth); break;
+    case 'btnJaConfirmei': await reload(S.auth.currentUser); S.user=S.auth.currentUser; if(S.user.emailVerified){await S.user.getIdToken(true);start();}else{S.authMsg='Ainda não aparece como confirmado. Confira a caixa de entrada e o lixo eletrônico.';renderAuth();} break;
+    case 'btnReenviarEmail': try{await sendEmailVerification(S.auth.currentUser);S.authMsg='E-mail reenviado.';}catch(e){S.authMsg=authErrMsg(e);} renderAuth(); break;
+    case 'btnAddItem': addItem(); break;
+    case 'btnLiberar': liberar(); break;
+    case 'btnVerificar': start(); break;
+    case 'btnCopyConv': {const txt=convite(S.conv);try{await navigator.clipboard.writeText(txt);toast('Mensagem copiada.');}catch(e){const a=$('#convArea');if(a){a.focus();a.select();}} break;}
+    case 'btnNova': case 'btnNova2': openForm(null); break;
+    case 'btnCancelar': S.sel=S.editId||null;S.form=null;S.editId=null;render(true); break;
+    case 'btnEnviar': enviar(); break;
+    case 'btnReenviar': case 'btnReenviar2': openForm(S.sel); break;
+    case 'btnAceitar': aceitar(S.sel); break;
+    case 'btnResponder': responder(); break;
+    case 'btnAlterar': S.respEdit=true;S.rd=null;render(); break;
+    case 'btnCancelResp': S.respEdit=false;S.rd=null;S.rdErr=null;render(); break;
+    case 'btnCsv': exportCsv(); break;
+    case 'btnSup': saveSup($('#supTxt').value); break;
+    case 'btnLimparMinhas': limparMinhas(); break;
+    case 'btnLimparTodas': limparTodas(); break;
+    case 'btnCopy': {const txt=summaryText(get(S.sel));
+      try{await navigator.clipboard.writeText(txt);toast('Resumo copiado.');}catch(e){S.copy=S.sel;render();const a=$('#copyArea');if(a){a.focus();a.select();}}
+      break;}
+  }
+});
+document.addEventListener('input',ev=>{
+  const el=ev.target;
+  if(el.dataset.it!=null&&S.form){const k=+el.dataset.it,ik=el.dataset.ik;const it=S.form.itens[k];if(!it) return;it[ik]=el.value;
+    if(S.formErr['i'+k+ik]){delete S.formErr['i'+k+ik];render();return;}
+    const c=document.getElementById('it-tot-'+k);if(c) c.textContent=rowTot(it);refreshFoot();return;}
+  if(el.dataset.f&&S.form){S.form[el.dataset.f]=el.value;if(S.formErr[el.dataset.f]){delete S.formErr[el.dataset.f];render();return;}
+    if(el.dataset.f==='doc'){const h=$('#h-doc');if(h) h.textContent=docHint(el.value);}
+    return;}
+  if(el.dataset.cvi!=null&&S.rd){S.rd.cvi[+el.dataset.cvi]=el.value;const x=get(S.sel);const t=$('#r-tot');if(t&&x) t.textContent=brl(rdTot(x,S.rd));if(S.rdErr){S.rdErr=null;const e=$('.rpanel .err');if(e) e.remove();}return;}
+  if(el.dataset.r&&S.rd){S.rd[el.dataset.r]=el.value;if(S.rdErr){S.rdErr=null;const e=$('.rpanel .err');if(e) e.remove();}return;}
+  if(el.id==='q'){S.q=el.value;renderSide();const q=$('#q');if(q&&document.activeElement!==q){q.focus();q.setSelectionRange(q.value.length,q.value.length);}return;}
+  if(el.id==='supTxt'){S.supTxt=el.value;return;}
+  if(el.dataset.na){S.na=S.na||{nome:'',email:'',err:null};S.na[el.dataset.na]=el.value;S.na.err=null;return;}
+});
+document.addEventListener('change',async ev=>{
+  const el=ev.target;
+  if(el.id==='som'){S.som=el.checked;store('som',S.som?'1':'0');if(S.som){beep();toast('Som ativado.');}return;}
+  if(el.id==='notif'){if(el.checked){const p=await Notification.requestPermission();S.notif=p==='granted';if(!S.notif){el.checked=false;toast('O navegador bloqueou os avisos. Libere nas configurações do site.');}}else S.notif=false;store('notif',S.notif?'1':'0');return;}
+  if(el.tagName==='SELECT'&&el.dataset.f&&S.form){S.form[el.dataset.f]=el.value;if(S.formErr[el.dataset.f]){delete S.formErr[el.dataset.f];render();}}
+});
+
+/* ---------- avisos ---------- */
+function notifyAdmin(){
+  const now=new Set(list(false).filter(i=>i.st==='aguardando').map(i=>i.id+'@'+(i.x.versao||1)));
+  if(S.seen){const fresh=[...now].filter(k=>!S.seen.has(k));if(fresh.length){const x=get(fresh[0].split('@')[0]);const msg=fresh.length>1?fresh.length+' novas propostas chegaram.':'Nova proposta de '+vend(x)+' · '+x.cliente;toast(msg);beep();desk('Propostas & Retorno',msg);}}
+  S.seen=now;
+}
+function notifyVendor(){
+  const now=new Set(list(true).filter(i=>cur(i.x)).map(i=>i.id+'@'+cur(i.x).em));
+  if(S.seenR){const fresh=[...now].filter(k=>!S.seenR.has(k));if(fresh.length){const x=get(fresh[0].split('@')[0]);const msg='Retorno chegou para '+x.cliente+': '+ST[status(x)];toast(msg);beep();desk('Propostas & Retorno',msg);}}
+  S.seenR=now;
+}
+
+/* ---------- início ---------- */
+function stop(){S.unsub.forEach(f=>{try{f()}catch(e){}});S.unsub=[];S.acessos=[];S.L={};S.loaded=false;S.seen=null;S.seenR=null;S.admin=false;S.sel=null;S.form=null;S.rd=null;}
+async function start(){
+  stop(); const u=S.user; S.uid=u.uid;
+  $('.app').hidden=true; $('#auth').hidden=false; $('#auth').innerHTML='<div class="card empty"><h3>Carregando propostas…</h3></div>';
+  if(!noDominio(u.email)){let ok=false;try{const a=await getDoc(doc(S.db,'acessos',u.email.toLowerCase()));ok=a.exists()&&a.data().ativo===true;}catch(e){ok=false;}
+    if(!ok){S.semAcesso=true;renderAuth();return;}}
+  S.semAcesso=false;
+  try{await getDocs(query(collection(S.db,'propostas'),limit(1)));S.admin=true;}catch(e){S.admin=false;}
+  S.mode=S.admin&&recall('mode')!=='solicitar'?'responder':'solicitar';
+  if(!S.admin){const saved=recall('sel');if(saved) S.sel=saved;}
+  const onErr=e=>{console.warn(e);toast(e&&e.code==='permission-denied'?'Sem permissão para ler as propostas.':'Conexão instável. Recarregue a página se nada atualizar.');};
+  S.unsub.push(onSnapshot(doc(S.db,'config','geral'),s=>{const d=s.exists()?s.data():{};S.cfg={supervisores:Array.isArray(d.supervisores)?d.supervisores:[]};render();},()=>{}));
+  if(S.admin) S.unsub.push(onSnapshot(query(collection(S.db,'acessos')),s=>{const A=[];s.forEach(d=>A.push({id:d.id,...d.data()}));S.acessos=A;render();},()=>{}));
+  const q=S.admin?query(collection(S.db,'propostas'),orderBy('enviadaEm','desc'),limit(1000)):query(collection(S.db,'propostas'),where('uid','==',S.uid));
+  S.unsub.push(onSnapshot(q,s=>{const L={};s.forEach(d=>{L[d.id]=d.data();});S.L=L;S.loaded=true;if(S.admin) notifyAdmin();notifyVendor();render();},onErr));
+  setTimeout(()=>{if(!S.loaded){S.loaded=true;render();}},6000);
+}
+function boot(){
+  S.som=recall('som')==='1'; S.notif=recall('notif')==='1'&&'Notification' in window&&Notification.permission==='granted';
+  if(CONFIG.firebase.apiKey==='COLE_AQUI'){renderAuth();return;}
+  const app=initializeApp(CONFIG.firebase); S.auth=getAuth(app); S.db=getFirestore(app);
+  getRedirectResult(S.auth).catch(e=>{S.authErr=authErrMsg(e);renderAuth();});
+  onAuthStateChanged(S.auth,u=>{S.user=u;
+    S.semAcesso=false;
+    const ok=u&&u.email&&(u.emailVerified||!u.providerData.some(p=>p.providerId==='password'));
+    if(ok) start(); else {stop();renderAuth();}
+  });
+  setInterval(()=>{if(S.user&&S.loaded&&!document.hidden&&!S.form&&!S.rd) renderSide();},60000);
+}
+boot();
+
+</script>
+</body>
+</html>

@@ -6,8 +6,15 @@
 // internet. Por isso as páginas HTML são "network-first" (tenta buscar a
 // versão mais nova sempre; só usa o cache se a rede falhar de verdade).
 // Só os ícones/manifest (que não mudam) ficam em cache-first.
+//
+// IMPORTANTE (correção de 25/09/2026): antes, QUALQUER resposta que
+// chegasse era guardada no cache - inclusive uma página de erro. Se o
+// GitHub Pages devolvesse 404 ou 500 num momento ruim (deploy no meio do
+// caminho, arquivo renomeado), a página de erro entrava no lugar do painel
+// e o aparelho passava a abrir a página de erro, inclusive sem internet.
+// Agora só entra no cache resposta 200 que seja HTML de verdade.
 
-const CACHE_VERSION = 'estoque-apucarana-v1';
+const CACHE_VERSION = 'estoque-apucarana-v2';
 
 const ARQUIVOS_ESTATICOS = [
   './manifest.json',
@@ -15,9 +22,25 @@ const ARQUIVOS_ESTATICOS = [
   './icon-512.png',
 ];
 
+// Só guardamos no cache o que realmente serve para abrir o painel depois.
+// Sem isso, uma página de erro do GitHub viraria o painel no aparelho.
+function respostaBoaParaGuardar(resp, esperaHtml) {
+  if (!resp || !resp.ok || resp.type === 'opaque') return false;
+  if (!esperaHtml) return true;
+  const tipo = resp.headers.get('content-type') || '';
+  return tipo.includes('text/html');
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(ARQUIVOS_ESTATICOS))
+    caches.open(CACHE_VERSION).then((cache) =>
+      // um a um: se um arquivo falhar, a instalação não vai por água abaixo
+      Promise.all(
+        ARQUIVOS_ESTATICOS.map((u) =>
+          cache.add(new Request(u, { cache: 'reload' })).catch(() => {})
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -39,10 +62,16 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  const url = new URL(req.url);
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch (e) {
+    return;
+  }
   if (url.origin !== self.location.origin) return;
 
-  const ehPagina = req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html');
+  const ehPagina =
+    req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html');
 
   if (ehPagina) {
     // Network-first: sempre busca a versão mais nova do painel; só cai
@@ -50,11 +79,20 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((resp) => {
-          const copia = resp.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(req, copia));
+          if (respostaBoaParaGuardar(resp, true)) {
+            const copia = resp.clone();
+            event.waitUntil(
+              caches.open(CACHE_VERSION).then((cache) => cache.put(req, copia))
+            );
+          }
           return resp;
         })
-        .catch(() => caches.match(req))
+        .catch(async () => {
+          // sem internet: entrega a última versão boa que vimos desta página,
+          // e se nunca abrimos esta página, pelo menos o painel de estoque
+          const guardado = await caches.match(req, { ignoreSearch: true });
+          return guardado || caches.match('./index.html', { ignoreSearch: true });
+        })
     );
     return;
   }
@@ -64,8 +102,12 @@ self.addEventListener('fetch', (event) => {
     caches.match(req).then((cacheado) => {
       const buscaRede = fetch(req)
         .then((resp) => {
-          const copia = resp.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(req, copia));
+          if (respostaBoaParaGuardar(resp, false)) {
+            const copia = resp.clone();
+            event.waitUntil(
+              caches.open(CACHE_VERSION).then((cache) => cache.put(req, copia))
+            );
+          }
           return resp;
         })
         .catch(() => cacheado);
