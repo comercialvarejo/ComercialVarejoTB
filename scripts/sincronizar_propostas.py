@@ -72,6 +72,7 @@ BARRA = """
     <a href="./propostas-retorno.html" class="active" aria-current="page">\U0001F91D Propostas</a>
     <a href="./acompanhamento-vendedores.html">\U0001F4C8 Vendedores</a>
     <a href="./emails-padrao.html">\U0001F4E7 Emails</a>
+    <a href="./ociosidade-frete.html">\U0001F69A Ociosidade/Frete</a>
   </div>
 </nav>
 <script>
