@@ -51,6 +51,7 @@ button{cursor:pointer}
 .seg-mode{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
 .seg-mode button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-weight:600;font-size:14px;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center}
 .seg-mode button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+[hidden]{display:none!important}
 .badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--bad);color:#fff;font-size:12px;display:inline-grid;place-items:center;font-weight:700}
 
 .app{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:0 40px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:start}
@@ -292,7 +293,6 @@ table.itab th:first-child,table.itab td:first-child{padding-left:0}
     <a href="./propostas-retorno.html" class="active" aria-current="page">🤝 Propostas</a>
     <a href="./acompanhamento-vendedores.html">📈 Vendedores</a>
     <a href="./emails-padrao.html">📧 Emails</a>
-    <a href="./ociosidade-frete.html">🚚 Ociosidade/Frete</a>
   </div>
 </nav>
 <script>
@@ -344,7 +344,9 @@ const CONFIG = {
   },
   dominio: "gtf.com.br",                 // só e-mails deste domínio entram sem liberação
   microsoft: { ativo: false, tenant: "COLE_O_ID_DO_LOCATARIO" }, // botão "Entrar com a conta Microsoft"
-  emailSenha: { ativo: true }            // entrar com e-mail e senha
+  emailSenha: { ativo: true },           // entrar com e-mail e senha
+  // Avisos por e-mail (EmailJS). Preencha os 3 códigos e troque ativo para true.
+  avisos: { ativo: false, publicKey: "COLE_A_PUBLIC_KEY", serviceId: "COLE_O_SERVICE_ID", templateId: "COLE_O_TEMPLATE_ID" }
 };
 /* ===================================================================== */
 
@@ -352,14 +354,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, OAuthProvider,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
   updateProfile, signOut, reload } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, writeBatch, setDoc, getDoc, getDocs, onSnapshot, query, where, orderBy, limit }
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, writeBatch, arrayUnion, setDoc, getDoc, getDocs, onSnapshot, query, where, orderBy, limit }
   from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const DEC={aprovada:'Aprovada',recusada:'Recusada',contra:'Contraproposta',info:'Pedir mais informações'};
 const ST={aguardando:'Aguardando retorno',aprovada:'Aprovada',recusada:'Recusada',contra:'Contraproposta',aceita:'Contraproposta aceita',info:'Faltam informações'};
-const S={auth:null,db:null,user:null,uid:null,admin:false,mode:'solicitar',L:{},cfg:{supervisores:[]},loaded:false,unsub:[],
+const S={auth:null,db:null,user:null,uid:null,admin:false,mode:'solicitar',L:{},cfg:{supervisores:[],avisos:[]},loaded:false,unsub:[],
   sel:null,filtro:'aguardando',q:'',form:null,formErr:{},editId:null,rd:null,rdErr:null,respEdit:false,copy:null,busy:false,
-  seen:null,seenR:null,som:false,notif:false,audio:null,supTxt:null,authTab:'entrar',authMsg:null,authErr:null,authBusy:false};
+  seen:null,seenR:null,som:false,notif:false,audio:null,supTxt:null,avTxt:null,authTab:'entrar',authMsg:null,authErr:null,authBusy:false};
 
 /* ---------- utils ---------- */
 const $=(s,el=document)=>el.querySelector(s);
@@ -400,6 +402,8 @@ function status(x){if(!x) return 'aguardando';const r=cur(x);if(!r) return 'agua
   if(r.dec==='contra'&&x.aceite&&x.aceite.versao===x.versao) return 'aceita';return r.dec;}
 function list(onlyMine){return Object.entries(S.L).filter(([,x])=>!onlyMine||x.uid===S.uid).map(([id,x])=>({id,x,st:status(x)}));}
 function minhas(){return list(true).filter(i=>!i.x.oculta);}
+const ocultaPraMim=x=>Array.isArray(x.ocultoPor)&&x.ocultoPor.includes(S.uid);
+function recebidas(){return list(false).filter(i=>!ocultaPraMim(i.x));}
 const domingoSP=()=>new Date(Date.now()-3*36e5).getUTCDay()===0;
 function nextNum(){let m=0;for(const i of list(true)) m=Math.max(m,i.x.n||0);return m+1;}
 const vend=x=>x.vendedorNome||x.vendedorEmail||'Vendedor';
@@ -436,16 +440,30 @@ async function enviar(){
       const x=get(S.editId);
       await updateDoc(doc(S.db,'propostas',S.editId),{...b,versao:(x.versao||1)+1,enviadaEm:now,envios:[...(x.envios||[x.enviadaEm]),now],aceite:null});
       S.sel=S.editId; toast('Nova versão enviada para os aprovadores.');
+      const nx={...x,...b,versao:(x.versao||1)+1,enviadaEm:now,aceite:null};
+      avisar(S.cfg.avisos,`Nova versão · Proposta ${nx.n} · ${nx.cliente} · ${vend(nx)}`,summaryText(nx));
     }else{
-      const ref=await addDoc(collection(S.db,'propostas'),{...b,uid:S.uid,vendedorEmail:(S.user.email||'').toLowerCase(),n:nextNum(),versao:1,criadaEm:now,enviadaEm:now,envios:[now],aceite:null});
+      const nNovo=nextNum();
+      const ref=await addDoc(collection(S.db,'propostas'),{...b,uid:S.uid,vendedorEmail:(S.user.email||'').toLowerCase(),n:nNovo,versao:1,criadaEm:now,enviadaEm:now,envios:[now],aceite:null});
       S.sel=ref.id; toast('Proposta enviada. Você recebe o retorno aqui.');
+      const nx={...b,vendedorEmail:(S.user.email||'').toLowerCase(),n:nNovo,versao:1,enviadaEm:now,aceite:null};
+      avisar(S.cfg.avisos,`Nova proposta ${nx.n} · ${nx.cliente} · ${vend(nx)}`,summaryText(nx));
     }
     S.form=null; S.editId=null; S.formErr={}; store('sel',S.sel);
-  }catch(err){handleErr(err);}
+  }catch(err){
+    if(err&&err.code==='permission-denied'){
+      let acessoOk=true; try{await getDoc(doc(S.db,'config','geral'));}catch(e){acessoOk=false;}
+      toast(acessoOk?'O Firebase recusou a proposta: as Regras estão desatualizadas. Peça para incluir o campo \'cod\' nas Regras.'
+                    :'Seu acesso não está liberado: confirme o e-mail pelo link recebido ou peça liberação a um aprovador.');
+      console.warn(err);
+    } else handleErr(err);
+  }
   S.busy=false; render(true);
 }
 async function aceitar(id){const x=get(id);if(!x||S.busy) return;S.busy=true;render();
-  try{await updateDoc(doc(S.db,'propostas',id),{aceite:{versao:x.versao,em:new Date().toISOString()}});toast('Contraproposta aceita.');}catch(e){handleErr(e);}
+  try{await updateDoc(doc(S.db,'propostas',id),{aceite:{versao:x.versao,em:new Date().toISOString()}});toast('Contraproposta aceita.');
+    const nx={...x,aceite:{versao:x.versao,em:new Date().toISOString()}};
+    avisar(S.cfg.avisos,`Contraproposta aceita · Proposta ${x.n} · ${x.cliente} · ${vend(x)}`,summaryText(nx));}catch(e){handleErr(e);}
   S.busy=false;render();}
 async function responder(){
   const id=S.sel; const x=get(id); const rd=S.rd; if(!x||!rd) return;
@@ -461,7 +479,9 @@ async function responder(){
   const now=new Date().toISOString(); const prev=x.resposta;
   const anteriores=prev?[...(x.anteriores||[]),prev]:(x.anteriores||[]);
   const resposta={dec:rd.dec,com:rd.com.trim(),cvi,cd,por:S.uid,porNome:meuNome(),em:now,versao:x.versao||1};
-  try{await updateDoc(doc(S.db,'propostas',id),{resposta,anteriores});S.rd=null;S.respEdit=false;toast('Retorno enviado para '+vend(x)+'.');}
+  try{await updateDoc(doc(S.db,'propostas',id),{resposta,anteriores});S.rd=null;S.respEdit=false;toast('Retorno enviado para '+vend(x)+'.');
+    const nx={...x,resposta,anteriores};
+    avisar(x.vendedorEmail,`Retorno da proposta ${x.n} · ${x.cliente}: ${ST[resposta.dec]||resposta.dec}`,summaryText(nx));}
   catch(e){handleErr(e);}
   S.busy=false; render();
 }
@@ -470,6 +490,15 @@ async function limparMinhas(){
   if(!confirm('Limpar '+alvo.length+(alvo.length===1?' proposta respondida':' propostas respondidas')+' da sua lista?\n\nAs que ainda aguardam retorno continuam aparecendo.')) return;
   S.busy=true; render();
   try{for(let k=0;k<alvo.length;k+=400){const b=writeBatch(S.db);alvo.slice(k,k+400).forEach(i=>b.update(doc(S.db,'propostas',i.id),{oculta:true}));await b.commit();}
+    if(alvo.some(i=>i.id===S.sel)) S.sel=null; toast('Sua lista foi limpa.');}
+  catch(e){handleErr(e);}
+  S.busy=false; render();
+}
+async function limparRecebidas(){
+  const alvo=recebidas().filter(i=>i.st!=='aguardando'); if(!alvo.length||S.busy) return;
+  if(!confirm('Tirar '+alvo.length+(alvo.length===1?' proposta respondida':' propostas respondidas')+' da SUA lista?\n\nOs outros aprovadores continuam vendo, e tudo fica no Resumo e histórico.')) return;
+  S.busy=true; render();
+  try{for(let k=0;k<alvo.length;k+=400){const b=writeBatch(S.db);alvo.slice(k,k+400).forEach(i=>b.update(doc(S.db,'propostas',i.id),{ocultoPor:arrayUnion(S.uid)}));await b.commit();}
     if(alvo.some(i=>i.id===S.sel)) S.sel=null; toast('Sua lista foi limpa.');}
   catch(e){handleErr(e);}
   S.busy=false; render();
@@ -485,6 +514,20 @@ async function limparTodas(){
   catch(e){handleErr(e);}
   S.busy=false; render();
 }
+/* ---------- avisos por e-mail ---------- */
+function avisoOn(){const a=CONFIG.avisos;return !!(a&&a.ativo&&a.publicKey&&!/^COLE_/.test(a.publicKey));}
+function avisar(para,assunto,texto){
+  const lista=(Array.isArray(para)?para:[para]).map(e=>String(e||'').trim().toLowerCase()).filter(e=>e.includes('@'));
+  if(!avisoOn()||!lista.length) return;
+  const link=location.origin+location.pathname; const a=CONFIG.avisos;
+  fetch('https://api.emailjs.com/api/v1.0/email/send',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({service_id:a.serviceId,template_id:a.templateId,user_id:a.publicKey,
+      template_params:{to_email:lista.join(','),subject:assunto,message:texto,link}})})
+    .then(r=>{if(!r.ok) console.warn('Aviso por e-mail falhou',r.status);}).catch(e=>console.warn('Aviso por e-mail falhou',e));
+}
+async function saveAv(txt){const arr=[...new Set(txt.split(/[,;\s]+/).map(s=>s.trim().toLowerCase()).filter(Boolean))];
+  const bad=arr.filter(e=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)); if(bad.length){toast('E-mail inválido: '+bad[0]);return;}
+  try{await setDoc(doc(S.db,'config','geral'),{avisos:arr},{merge:true});S.avTxt=null;toast('Lista de avisos salva.');}catch(e){handleErr(e);}}
 async function saveSup(txt){const arr=[...new Set(txt.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean))];
   try{await setDoc(doc(S.db,'config','geral'),{supervisores:arr},{merge:true});S.supTxt=null;toast('Lista de supervisores salva.');}catch(e){handleErr(e);}}
 
@@ -579,7 +622,7 @@ function renderSide(){
   if(S.mode==='solicitar'){
     const items=sortItems(minhas()); const nLimp=items.filter(i=>i.st!=='aguardando').length;
     h+=`<div class="side-head"><h2>Minhas propostas</h2><button class="btn small primary" id="btnNova">+ Nova proposta</button></div><div class="plist">`;
-    if(S.sel==='__nova') h+=`<button class="pitem" aria-current="true"><span class="pn">${S.editId?'Nova versão':'Nova proposta'}</span><span class="pill st-aguardando">Rascunho</span><span class="pd">Ainda não enviada</span></button>`;
+    if(S.sel==='__nova') h+=`<button class="pitem" aria-current="true"><span class="pn">${S.editId?'Nova versão':S.copiaDe?'Cópia de proposta':'Nova proposta'}</span><span class="pill st-aguardando">Rascunho</span><span class="pd">Ainda não enviada</span></button>`;
     for(const i of items) h+=itemBtn(i,false);
     if(!items.length&&S.sel!=='__nova') h+=`<div class="empty-side">Você ainda não enviou propostas.</div>`;
     h+=`</div><div class="sidebox"><div class="lock"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex:none;margin-top:2px"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.5"/></svg><span>Suas propostas e retornos só aparecem para você e para os aprovadores. Outros vendedores não veem nada.</span></div>
@@ -587,7 +630,7 @@ function renderSide(){
       <button class="btn small danger" id="btnLimparMinhas" ${nLimp&&!S.busy?'':'disabled'}>Limpar minhas propostas${nLimp?' ('+nLimp+')':''}</button>
       <span>Tira da sua lista as propostas já respondidas. As que aguardam retorno continuam.</span></div>`;
   }else{
-    const all=list(false); const c={aguardando:0,respondidas:0,todas:all.length}; for(const i of all) i.st==='aguardando'?c.aguardando++:c.respondidas++;
+    const all=recebidas(); const nLimpA=all.filter(i=>i.st!=='aguardando').length; const c={aguardando:0,respondidas:0,todas:all.length}; for(const i of all) i.st==='aguardando'?c.aguardando++:c.respondidas++;
     let items=all.filter(i=>S.filtro==='todas'||(S.filtro==='aguardando'?i.st==='aguardando':i.st!=='aguardando'));
     if(S.q){const q=norm(S.q);items=items.filter(i=>norm(i.x.cliente+' '+vend(i.x)+' '+(i.x.vendedorEmail||'')+' '+itens(i.x).map(z=>z.produto).join(' ')+' '+(i.x.supervisor||'')+' '+i.x.doc+' '+(i.x.cod||'')).includes(q));}
     sortItems(items);
@@ -599,7 +642,9 @@ function renderSide(){
     <button class="btn" data-sel="__hist" style="justify-content:flex-start;${S.sel==='__hist'?'border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)':''}">Resumo e histórico</button>
     <div class="sidebox"><label class="toggle"><input type="checkbox" id="som" ${S.som?'checked':''}> Som quando chegar proposta</label>
     ${'Notification' in window?`<label class="toggle"><input type="checkbox" id="notif" ${S.notif&&Notification.permission==='granted'?'checked':''}> Aviso na tela do computador</label>`:''}
-    <span>Os avisos aparecem enquanto o painel estiver aberto em alguma aba.</span></div>`;
+    <span>Os avisos aparecem enquanto o painel estiver aberto em alguma aba.</span>
+    <button class="btn small danger" id="btnLimparRecebidas" ${nLimpA&&!S.busy?'':'disabled'}>Limpar minha lista${nLimpA?' ('+nLimpA+')':''}</button>
+    <span>Tira só da sua lista as propostas já respondidas. Os outros aprovadores continuam vendo, e todas ficam no Resumo e histórico.</span></div>`;
   }
   side.innerHTML=h;
 }
@@ -682,6 +727,7 @@ function renderDetail(m,id,adm){
   let h=`<section class="card"><div class="phead"><div><div class="eyebrow num">${adm?esc(vend(x))+(isRep(x)?' · representante':'')+' · ':''}Proposta ${x.n}${(x.versao||1)>1?' · versão '+x.versao:''}</div><h2>${esc(x.cliente)} <span class="pill st-${st}">${esc(ST[st])}</span></h2></div>
     <div class="actions"><button class="btn small" id="btnCopy">Copiar resumo</button>
     ${!adm&&(st==='info'||st==='contra'||st==='recusada')?`<button class="btn small${st==='info'?' primary':''}" id="btnReenviar">${st==='info'?'Completar e reenviar':'Enviar nova versão'}</button>`:''}
+    ${!adm&&(st==='aprovada'||st==='aceita')?`<button class="btn small primary" id="btnCopiarProp">Copiar proposta</button>`:''}
     ${adm&&c&&!S.respEdit?`<button class="btn small" id="btnAlterar">Alterar retorno</button>`:''}</div></div>`;
   if(S.copy===id) h+=`<div class="copybox"><div class="flabel" style="margin-bottom:6px">Selecione e copie o texto</div><textarea id="copyArea" readonly>${esc(summaryText(x))}</textarea></div>`;
   h+=timeline(x);
@@ -740,7 +786,8 @@ function renderHist(m){
   ${rows.map(r=>{const t=tot(r.x);return `<tr class="hrow" data-sel="${esc(r.id)}"><td><b>${esc(r.x.cliente)}</b><span class="sub2">Proposta ${r.x.n}${(r.x.versao||1)>1?' · v'+r.x.versao:''}</span></td><td>${esc(vend(r.x))}<span class="sub2">${esc(r.x.supervisor||'')}</span></td><td class="n">${t.n}</td><td class="n">${fmt(t.kg)}</td><td class="n">${brl(t.rs)}<span class="sub2">${pkg(t.med)}</span></td><td class="n">${r.x.desc?fmt(r.x.desc)+'%':'—'}</td><td class="num">${fDT(r.x.enviadaEm)}</td><td><span class="pill st-${r.st}">${esc(ST[r.st])}</span></td><td class="n">${r.t!=null?fDur(r.t):`<span style="color:var(--warn)">há ${fDur(now-new Date(r.x.enviadaEm))}</span>`}</td><td>${r.r?esc(r.r.porNome||''):'—'}</td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--ink-3)">Nenhuma proposta ainda.</td></tr>'}
   </tbody></table></div></section>
   <section class="card"><div class="phead" style="padding-bottom:4px"><div><div class="eyebrow">Configuração</div><h2 style="font-size:22px">Supervisores</h2></div></div>
-  <div class="sec" style="border-top:0;padding-top:4px"><div class="field"><label for="supTxt">Nomes que aparecem para o vendedor escolher, separados por vírgula</label><input id="supTxt" value="${esc(S.supTxt??S.cfg.supervisores.join(', '))}" placeholder="Ex.: Paulo Rizzato, Leonardo" autocomplete="off"></div><p style="margin:10px 0 0"><button class="btn small primary" id="btnSup">Salvar supervisores</button></p></div></section>
+  <div class="sec" style="border-top:0;padding-top:4px"><div class="field"><label for="supTxt">Nomes que aparecem para o vendedor escolher, separados por vírgula</label><input id="supTxt" value="${esc(S.supTxt??S.cfg.supervisores.join(', '))}" placeholder="Ex.: Paulo Rizzato, Leonardo" autocomplete="off"></div><p style="margin:10px 0 0"><button class="btn small primary" id="btnSup">Salvar supervisores</button></p></div>
+  <div class="sec"><div class="field"><label for="avTxt">E-mails que recebem aviso de proposta nova e de contraproposta aceita, separados por vírgula</label><input id="avTxt" value="${esc(S.avTxt??S.cfg.avisos.join(', '))}" placeholder="Ex.: paulo.neto@gtf.com.br, miguel.trindade@gtf.com.br" autocomplete="off" inputmode="email"></div><p style="margin:10px 0 0"><button class="btn small primary" id="btnAv">Salvar e-mails de aviso</button> <span class="muted" style="margin-left:8px">${avisoOn()?'Avisos por e-mail ligados.':'Avisos por e-mail ainda desligados no CONFIG.'}</span></p></div></section>
   <section class="card"><div class="phead" style="padding-bottom:4px"><div><div class="eyebrow">Só aos domingos</div><h2 style="font-size:22px">Limpeza semanal</h2></div></div>
   <div class="sec" style="border-top:0;padding-top:4px"><p class="muted">Exclui de vez as propostas de todos os vendedores e representantes (${rows.length} hoje). Baixe a planilha antes, porque não dá para desfazer.</p><p style="margin:10px 0 0"><button class="btn small danger" id="btnLimparTodas" ${rows.length&&domingoSP()&&!S.busy?'':'disabled'}>Limpar propostas de todos</button> ${domingoSP()?'':'<span class="muted" style="margin-left:8px">Disponível só no domingo.</span>'}</p></div></section>`;
 }
@@ -781,7 +828,15 @@ function exportCsv(){
 }
 
 /* ---------- events ---------- */
-function openForm(editId){S.sel='__nova';S.editId=editId||null;S.formErr={};
+function copiarProposta(id){const x=get(id);if(!x) return;const c=cur(x);const usaContra=status(x)==='aceita';
+  const f=blankForm();
+  S.form={...f,cliente:x.cliente||'',cod:x.cod||'',doc:fmtDoc(x.doc),supervisor:x.supervisor||f.supervisor,
+    itens:itens(x).map((i,k)=>({produto:i.produto,qtd:dec2(i.qtd),valor:dec2(usaContra?cprice(c,k,i):i.valor)})),
+    desc:usaContra?'':(x.desc?dec2(x.desc):''),obs:x.obs||''};
+  if(!S.form.itens.length) S.form.itens=[blankItem()];
+  S.sel='__nova';S.editId=null;S.copiaDe=id;S.formErr={};render(true);
+  toast('Proposta copiada'+(usaContra?' com os preços da contraproposta':'')+'. Confira e envie.');}
+function openForm(editId){S.sel='__nova';S.editId=editId||null;S.copiaDe=null;S.formErr={};
   if(editId){const x=get(editId);S.form={nome:x.vendedorNome||'',cliente:x.cliente,cod:x.cod||'',doc:fmtDoc(x.doc),supervisor:x.supervisor||'',itens:itens(x).map(i=>({produto:i.produto,qtd:dec2(i.qtd),valor:dec2(i.valor)})),desc:x.desc?dec2(x.desc):'',obs:x.obs||''};if(!S.form.itens.length) S.form.itens=[blankItem()];}
   else S.form=blankForm(); render(true);}
 function addItem(){if(!S.form) return;S.form.itens.push(blankItem());render();const el=document.getElementById('it-'+(S.form.itens.length-1)+'-produto');if(el) el.focus();}
@@ -810,12 +865,15 @@ document.addEventListener('click',async ev=>{
     case 'btnCancelar': S.sel=S.editId||null;S.form=null;S.editId=null;render(true); break;
     case 'btnEnviar': enviar(); break;
     case 'btnReenviar': case 'btnReenviar2': openForm(S.sel); break;
+    case 'btnCopiarProp': copiarProposta(S.sel); break;
+    case 'btnLimparRecebidas': limparRecebidas(); break;
     case 'btnAceitar': aceitar(S.sel); break;
     case 'btnResponder': responder(); break;
     case 'btnAlterar': S.respEdit=true;S.rd=null;render(); break;
     case 'btnCancelResp': S.respEdit=false;S.rd=null;S.rdErr=null;render(); break;
     case 'btnCsv': exportCsv(); break;
     case 'btnSup': saveSup($('#supTxt').value); break;
+    case 'btnAv': saveAv($('#avTxt').value); break;
     case 'btnLimparMinhas': limparMinhas(); break;
     case 'btnLimparTodas': limparTodas(); break;
     case 'btnCopy': {const txt=summaryText(get(S.sel));
@@ -835,6 +893,7 @@ document.addEventListener('input',ev=>{
   if(el.dataset.r&&S.rd){S.rd[el.dataset.r]=el.value;if(S.rdErr){S.rdErr=null;const e=$('.rpanel .err');if(e) e.remove();}return;}
   if(el.id==='q'){S.q=el.value;renderSide();const q=$('#q');if(q&&document.activeElement!==q){q.focus();q.setSelectionRange(q.value.length,q.value.length);}return;}
   if(el.id==='supTxt'){S.supTxt=el.value;return;}
+  if(el.id==='avTxt'){S.avTxt=el.value;return;}
   if(el.dataset.na){S.na=S.na||{nome:'',email:'',err:null};S.na[el.dataset.na]=el.value;S.na.err=null;return;}
 });
 document.addEventListener('change',async ev=>{
@@ -860,6 +919,8 @@ function notifyVendor(){
 function stop(){S.unsub.forEach(f=>{try{f()}catch(e){}});S.unsub=[];S.acessos=[];S.L={};S.loaded=false;S.seen=null;S.seenR=null;S.admin=false;S.sel=null;S.form=null;S.rd=null;}
 async function start(){
   stop(); const u=S.user; S.uid=u.uid;
+  // Garante que o Firebase já saiba que o e-mail foi confirmado (o crachá de acesso pode estar desatualizado).
+  try{const tk=await u.getIdTokenResult();if(u.emailVerified&&tk.claims.email_verified!==true) await u.getIdToken(true);}catch(e){}
   $('.app').hidden=true; $('#auth').hidden=false; $('#auth').innerHTML='<div class="card empty"><h3>Carregando propostas…</h3></div>';
   if(!noDominio(u.email)){let ok=false;try{const a=await getDoc(doc(S.db,'acessos',u.email.toLowerCase()));ok=a.exists()&&a.data().ativo===true;}catch(e){ok=false;}
     if(!ok){S.semAcesso=true;renderAuth();return;}}
@@ -868,7 +929,7 @@ async function start(){
   S.mode=S.admin&&recall('mode')!=='solicitar'?'responder':'solicitar';
   if(!S.admin){const saved=recall('sel');if(saved) S.sel=saved;}
   const onErr=e=>{console.warn(e);toast(e&&e.code==='permission-denied'?'Sem permissão para ler as propostas.':'Conexão instável. Recarregue a página se nada atualizar.');};
-  S.unsub.push(onSnapshot(doc(S.db,'config','geral'),s=>{const d=s.exists()?s.data():{};S.cfg={supervisores:Array.isArray(d.supervisores)?d.supervisores:[]};render();},()=>{}));
+  S.unsub.push(onSnapshot(doc(S.db,'config','geral'),s=>{const d=s.exists()?s.data():{};S.cfg={supervisores:Array.isArray(d.supervisores)?d.supervisores:[],avisos:Array.isArray(d.avisos)?d.avisos:[]};render();},()=>{}));
   if(S.admin) S.unsub.push(onSnapshot(query(collection(S.db,'acessos')),s=>{const A=[];s.forEach(d=>A.push({id:d.id,...d.data()}));S.acessos=A;render();},()=>{}));
   const q=S.admin?query(collection(S.db,'propostas'),orderBy('enviadaEm','desc'),limit(1000)):query(collection(S.db,'propostas'),where('uid','==',S.uid));
   S.unsub.push(onSnapshot(q,s=>{const L={};s.forEach(d=>{L[d.id]=d.data();});S.L=L;S.loaded=true;if(S.admin) notifyAdmin();notifyVendor();render();},onErr));
