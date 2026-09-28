@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#8f0e28">
+<title>Ociosidade/Frete · Canção Alimentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12151a; --surface:#1b1f27; --surface-2:#232833; --border:#2b313d;
+    --text:#ecebe6; --muted:#8891a0;
+    --on-accent:#1b1305; --disabled:#454b57;
+    --frota:#5fa8d8; --terceiro:#e8a33d; --good:#5fbf8b; --bad:#c9573f; --warn:#e8a33d;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px;}
+  header{border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--terceiro);text-transform:uppercase;}
+  h1{font-family:'Oswald',sans-serif;font-weight:600;font-size:clamp(22px,5vw,30px);letter-spacing:.01em;margin:6px 0 6px;text-transform:uppercase;}
+  .sub{color:var(--muted);font-size:13px;line-height:1.5;max-width:600px;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .card h2{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:13px;letter-spacing:.05em;color:var(--muted);margin:0 0 14px;font-weight:500;display:flex;justify-content:space-between;align-items:center;}
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;}
+  input[type=text], input[type=number]{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:11px 12px;font-family:'JetBrains Mono',monospace;font-size:14px;outline:none;
+  }
+  input:focus{border-color:var(--terceiro);}
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+  .hint b{color:var(--text);}
+
+  .chiprow{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{font-family:'JetBrains Mono',monospace;font-size:12px;padding:8px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);cursor:pointer;transition:.15s;}
+  .chip:hover{color:var(--text);}
+  .chip.active{background:var(--terceiro);color:var(--on-accent);border-color:var(--terceiro);font-weight:600;}
+  .chip.small{padding:5px 11px;font-size:11px;}
+
+  select{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:11px 12px;font-family:'Inter',sans-serif;font-size:13.5px;outline:none;}
+
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:480px){.row2{grid-template-columns:1fr;}}
+
+  .kv{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;gap:12px;}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--muted);}
+  .kv .v{font-family:'JetBrains Mono',monospace;font-weight:600;text-align:right;}
+
+  .badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 9px;border-radius:12px;font-weight:700;letter-spacing:.03em;}
+  .badge.ok{background:rgba(95,191,139,.15);color:var(--good);}
+  .badge.warn{background:rgba(232,163,61,.15);color:var(--terceiro);}
+  .badge.bad{background:rgba(201,87,63,.15);color:var(--bad);}
+
+  .result-title{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:14px;letter-spacing:.04em;margin:0 0 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .note{font-size:12px;color:var(--muted);line-height:1.5;}
+  .alert{background:rgba(232,163,61,.1);border:1px solid rgba(232,163,61,.3);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--terceiro);margin-top:10px;}
+  .alert.bad{background:rgba(201,87,63,.1);border-color:rgba(201,87,63,.3);color:var(--bad);}
+  .alert.good{background:rgba(95,191,139,.1);border-color:rgba(95,191,139,.3);color:var(--good);}
+
+  /* Progress bar peso */
+  .weightbar{position:relative;height:26px;background:var(--surface-2);border-radius:6px;overflow:hidden;margin:12px 0 6px;border:1px solid var(--border);}
+  .weightbar .fill{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg, var(--bad), var(--terceiro));transition:width .25s;}
+  .weightbar .marker{position:absolute;top:0;bottom:0;width:2px;background:var(--text);opacity:.6;}
+  .weightbar .marker.min{background:var(--good);}
+  .weightbar-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-bottom:14px;}
+
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .btn{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:12px;letter-spacing:.03em;padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;transition:.15s;font-weight:500;}
+  .btn:hover{border-color:var(--terceiro);}
+  .btn.primary{background:var(--terceiro);color:var(--on-accent);border-color:var(--terceiro);}
+  .btn.ghost{background:transparent;}
+  .btn.small{padding:5px 10px;font-size:10.5px;}
+
+  table{border-collapse:collapse;width:100%;}
+  thead th{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:11px;letter-spacing:.03em;color:var(--muted);padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);font-weight:500;}
+  thead th:first-child{text-align:left;}
+  tbody td{padding:8px 10px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12.5px;border-bottom:1px solid var(--border);}
+  tbody td:first-child{text-align:left;font-family:'Inter',sans-serif;font-weight:600;}
+  tbody tr.current{background:rgba(232,163,61,.08);}
+  tbody tr.invalid td{color:var(--disabled);}
+  .tblscroll{overflow-x:auto;}
+
+  .histitem{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;gap:10px;}
+  .histitem:last-child{border-bottom:none;}
+  .histitem .meta{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;}
+  .histitem .del{cursor:pointer;color:var(--bad);font-family:'JetBrains Mono',monospace;font-size:11px;flex-shrink:0;}
+  .empty{color:var(--muted);font-size:12px;font-style:italic;}
+
+  table.minicompare{margin-top:4px;}
+  table.minicompare thead th{text-align:center;padding:6px 10px;}
+  table.minicompare thead th:first-child{text-align:left;}
+  table.minicompare tbody td{text-align:center;padding:8px 10px;font-size:12.5px;}
+  table.minicompare tbody td:first-child{text-align:left;font-family:'Inter',sans-serif;font-weight:500;color:var(--muted);}
+
+  footer{margin-top:30px;color:var(--muted);font-size:11.5px;text-align:center;}
+
+  /* ---- Tema claro (mesma chave de tema das outras páginas) ---- */
+  html[data-theme="light"]{
+    --bg:#f1ebdf; --surface:#fffdfa; --surface-2:#f6f0e5; --border:#e3d8c6;
+    --text:#2a211a; --muted:#7d6f5d; --disabled:#b9ad9b;
+    --frota:#2f7fb5; --terceiro:#b8740f; --good:#2e8a59; --bad:#b0412b; --warn:#b8740f;
+    --on-accent:#ffffff;
+  }
+  body{transition:background .2s,color .2s;}
+
+  /* ---- Barra de navegação do painel ---- */
+  .site-nav{
+    background:linear-gradient(135deg,#8f0e28 0%,#c1354e 60%,#d9452e 100%);
+    padding:calc(12px + env(safe-area-inset-top,0px)) 18px 12px;
+  }
+  .site-nav-inner{max-width:820px;margin:0 auto;display:flex;align-items:center;gap:10px;}
+  .page-tabs{display:flex;gap:6px;flex-wrap:wrap;flex:1;}
+  .page-tab{
+    display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:20px;
+    font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-decoration:none;
+    color:rgba(255,255,255,.8);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+    transition:background .15s;white-space:nowrap;
+  }
+  .page-tab:hover{background:rgba(255,255,255,.2);}
+  .page-tab.active{background:#fff;color:#59091b;border-color:#fff;}
+  .theme-toggle{
+    flex-shrink:0;width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.25);
+    background:rgba(255,255,255,.12);color:#fff;font-size:16px;cursor:pointer;
+  }
+  .theme-toggle:active{transform:scale(.94);}
+  @media (max-width:600px){
+    .site-nav-inner{align-items:flex-start;}
+    .page-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;}
+    .page-tab{padding:6px 10px;font-size:11px;}
+  }
+</style>
+<script>
+(function(){
+  var saved=null; try{saved=localStorage.getItem('estoque-theme');}catch(e){}
+  var prefersDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', saved||(prefersDark?'dark':'light'));
+})();
+</script>
+</head>
+<body>
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <div class="page-tabs">
+      <a href="./index.html" class="page-tab">📦 Estoque</a>
+      <a href="./tabela-precos.html" class="page-tab">💰 Preços</a>
+      <a href="./pedidos-em-aberto.html" class="page-tab">📋 Pedidos</a>
+      <a href="./propostas-retorno.html" class="page-tab">🤝 Propostas</a>
+      <a href="./acompanhamento-vendedores.html" class="page-tab">📈 Vendedores</a>
+      <a href="./emails-padrao.html" class="page-tab">📧 Emails</a>
+      <a href="./ociosidade-frete.html" class="page-tab active">🚚 Ociosidade/Frete</a>
+    </div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+  </div>
+</nav>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Canção Alimentos · Filial 01052 · Terra Boa</div>
+    <h1>Simulador de Ociosidade de Frete</h1>
+    <div class="sub">Descubra quanto custa rodar um veículo abaixo do peso mínimo — e quanto de desconto por kg você pode conceder numa venda extra para fechar a carga.</div>
+  </header>
+
+  <div class="card">
+    <h2>1 · Destino</h2>
+    <div class="field">
+      <label for="cityInput">Cidade</label>
+      <input type="text" id="cityInput" list="cityList" placeholder="Digite o nome da cidade...">
+      <datalist id="cityList"></datalist>
+      <div class="hint" id="cityHint">Selecione uma cidade para calcular a distância.</div>
+    </div>
+    <div id="recentCities" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Perfil do veículo</h2>
+    <div class="chiprow" id="perfilChips"></div>
+    <div class="hint" id="perfilHint"></div>
+  </div>
+
+  <div class="card">
+    <h2>3 · Operação</h2>
+    <div class="chiprow" id="opChips">
+      <div class="chip active" data-op="propria">Frota Própria</div>
+      <div class="chip" data-op="melhor">Terceiro · Melhor Preço</div>
+      <div class="chip" data-op="escolher">Terceiro · Escolher</div>
+    </div>
+    <div class="field" style="margin-top:12px;display:none;" id="carrierField">
+      <label for="carrierSelect">Transportadora</label>
+      <select id="carrierSelect"></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4 · Carga</h2>
+    <div class="row2">
+      <div class="field">
+        <label for="pesoAtual">Peso atual da carga (kg)</label>
+        <input type="number" id="pesoAtual" placeholder="ex: 3500" min="0">
+      </div>
+      <div class="field">
+        <label for="pesoExtra">Peso da venda extra em avaliação (kg)</label>
+        <input type="number" id="pesoExtra" placeholder="opcional" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none;">
+    <h2>Resultado</h2>
+    <div id="resultBody"></div>
+    <div class="btnrow">
+      <button class="btn primary" id="btnCopy">Copiar resumo</button>
+      <button class="btn" id="btnSave">Salvar simulação</button>
+    </div>
+  </div>
+
+  <div class="card" id="compareCard" style="display:none;">
+    <h2>Comparativo entre perfis <span class="hint" style="margin:0;">mesma cidade e peso</span></h2>
+    <div class="tblscroll"><table id="compareTable"></table></div>
+    <div class="hint" id="compareNote" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Histórico de simulações <button class="btn small ghost" id="btnClearHist">limpar tudo</button></h2>
+    <div id="histList"><div class="empty">Carregando...</div></div>
+  </div>
+
+  <footer>Valores estimados a partir da Tabela de Frete Terra Boa · uso interno · histórico salvo apenas neste navegador</footer>
+</div>
+
+<script>
+/* Armazenamento local do navegador (substitui o window.storage do Claude).
+   O histórico fica salvo no navegador de cada usuário. */
+(function(){
+  var PREFIX='ociosidade-frete:';
+  function ls(){ try{ return window.localStorage; }catch(e){ return null; } }
+  window.storage = {
+    get: async function(key){
+      var st=ls(); var v=st?st.getItem(PREFIX+key):null;
+      if(v===null) throw new Error('Chave não encontrada');
+      return {key:key, value:v, shared:false};
+    },
+    set: async function(key,value){
+      var st=ls(); if(!st) throw new Error('Armazenamento indisponível');
+      st.setItem(PREFIX+key, String(value)); return {key:key, value:value, shared:false};
+    },
+    delete: async function(key){
+      var st=ls(); if(st) st.removeItem(PREFIX+key); return {key:key, deleted:true, shared:false};
+    },
+    list: async function(prefix){
+      var st=ls(); var keys=[]; prefix=prefix||'';
+      if(st){ for(var i=0;i<st.length;i++){ var k=st.key(i);
+        if(k && k.indexOf(PREFIX+prefix)===0) keys.push(k.slice(PREFIX.length)); } }
+      keys.sort(); return {keys:keys, prefix:prefix, shared:false};
+    }
+  };
+})();
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  try{localStorage.setItem('estoque-theme',next);}catch(e){}
+  document.getElementById('themeToggle').textContent=next==='dark'?'☀️':'🌙';
+}
+document.getElementById('themeToggle').textContent=
+  document.documentElement.getAttribute('data-theme')==='dark'?'☀️':'🌙';
+</script>
+<script>
+const CITIES = [{"c":"Abatiá","uf":"PR","d":279.4},{"c":"Adrianópolis","uf":"PR","d":455.2},{"c":"Agudos do Sul","uf":"PR","d":499.4},{"c":"Almirante Tamandaré","uf":"PR","d":452.1},{"c":"Altamira do Paraná","uf":"PR","d":147.1},{"c":"Alto Paraná","uf":"PR","d":90.0},{"c":"Alto Paraíso","uf":"PR","d":328.3},{"c":"Alto Piquiri","uf":"PR","d":131.0},{"c":"Altônia","uf":"PR","d":184.8},{"c":"Alvorada do Sul","uf":"PR","d":207.3},{"c":"Amapora","uf":"PR","d":103.2},{"c":"Ampére","uf":"PR","d":325.2},{"c":"Anahy","uf":"PR","d":149.7},{"c":"Andirá","uf":"PR","d":299.7},{"c":"Anhumas","uf":"SP","d":245.6},{"c":"Antonina","uf":"PR","d":525.2},{"c":"Antônio Olinto","uf":"PR","d":418.3},{"c":"Apucarana","uf":"PR","d":128.8},{"c":"Arapongas","uf":"PR","d":139.0},{"c":"Arapoti","uf":"PR","d":336.9},{"c":"Arapuã","uf":"PR","d":113.1},{"c":"Araruna","uf":"PR","d":23.7},{"c":"Araucária","uf":"PR","d":459.8},{"c":"Ariranha do Ivaí","uf":"PR","d":139.1},{"c":"Assaí","uf":"PR","d":211.4},{"c":"Assis Chateaubriand","uf":"PR","d":163.4},{"c":"Astorga","uf":"PR","d":124.3},{"c":"Atalaia","uf":"PR","d":99.2},{"c":"Balsa Nova","uf":"PR","d":436.0},{"c":"Bandeirantes","uf":"PR","d":280.3},{"c":"Barbosa Ferraz","uf":"PR","d":67.3},{"c":"Barra do Jacaré","uf":"PR","d":302.5},{"c":"Barracão","uf":"PR","d":375.9},{"c":"Barueri","uf":"SP","d":709.9},{"c":"Bela Vista da Caroba","uf":"PR","d":332.2},{"c":"Bela Vista do Paraíso","uf":"PR","d":192.9},{"c":"Belo Horizonte","uf":"MG","d":1222.7},{"c":"Bituruna","uf":"PR","d":351.1},{"c":"Boa Esperança","uf":"PR","d":79.3},{"c":"Boa Esperança do Iguaçu","uf":"PR","d":276.5},{"c":"Boa Ventura de São Roque","uf":"PR","d":184.8},{"c":"Boa Vista da Aparecida","uf":"PR","d":261.3},{"c":"Bocaiúva do Sul","uf":"PR","d":466.6},{"c":"Bom Jesus do Sul","uf":"PR","d":367.1},{"c":"Bom Sucesso","uf":"PR","d":86.9},{"c":"Bom Sucesso do Sul","uf":"PR","d":324.1},{"c":"Borrazópolis","uf":"PR","d":111.7},{"c":"Braganey","uf":"PR","d":169.0},{"c":"Brasileia","uf":"12","d":2792.9},{"c":"Brasilândia do Sul","uf":"PR","d":149.6},{"c":"Cafeara","uf":"PR","d":165.2},{"c":"Cafelândia","uf":"PR","d":162.0},{"c":"Cafezal do Sul","uf":"PR","d":136.7},{"c":"Califórnia","uf":"PR","d":139.5},{"c":"Cambará","uf":"PR","d":318.9},{"c":"Cambira","uf":"PR","d":113.2},{"c":"Cambé","uf":"PR","d":163.7},{"c":"Campina Grande do Sul","uf":"PR","d":479.1},{"c":"Campina da Lagoa","uf":"PR","d":122.5},{"c":"Campina do Simão","uf":"PR","d":198.7},{"c":"Campinas","uf":"SP","d":697.1},{"c":"Campo Bonito","uf":"PR","d":188.5},{"c":"Campo Largo","uf":"PR","d":436.7},{"c":"Campo Magro","uf":"PR","d":439.3},{"c":"Campo Mourão","uf":"PR","d":39.6},{"c":"Campo do Tenente","uf":"PR","d":464.6},{"c":"Candói","uf":"PR","d":256.4},{"c":"Cantagalo","uf":"PR","d":226.9},{"c":"Capanema","uf":"PR","d":315.0},{"c":"Capitão Leônidas Marques","uf":"PR","d":279.9},{"c":"Carambeí","uf":"PR","d":337.4},{"c":"Carlópolis","uf":"PR","d":350.1},{"c":"Cascavel","uf":"PR","d":209.1},{"c":"Castro","uf":"PR","d":339.7},{"c":"Catanduvas","uf":"PR","d":218.8},{"c":"Centenário do Sul","uf":"PR","d":170.8},{"c":"Cerro Azul","uf":"PR","d":326.9},{"c":"Chopinzinho","uf":"PR","d":289.7},{"c":"Cianorte","uf":"PR","d":25.2},{"c":"Cidade Gaúcha","uf":"PR","d":83.4},{"c":"Clevelândia","uf":"PR","d":366.6},{"c":"Colombo","uf":"PR","d":459.0},{"c":"Colorado","uf":"PR","d":142.8},{"c":"Comendador Levy Gasparian","uf":"RJ","d":1206.0},{"c":"Concordia","uf":"SC","d":484.5},{"c":"Congonhinhas","uf":"PR","d":242.5},{"c":"Conselheiro Mairinck","uf":"PR","d":290.4},{"c":"Contenda","uf":"PR","d":453.5},{"c":"Corbélia","uf":"PR","d":179.3},{"c":"Cornélio Procópio","uf":"PR","d":243.1},{"c":"Coronel Domingos Soares","uf":"PR","d":345.7},{"c":"Coronel Vivida","uf":"PR","d":307.3},{"c":"Corumbataí do Sul","uf":"PR","d":62.4},{"c":"Cruz Machado","uf":"PR","d":342.1},{"c":"Cruzeiro do Iguaçu","uf":"PR","d":271.3},{"c":"Cruzeiro do Oeste","uf":"PR","d":80.2},{"c":"Cruzeiro do Sul","uf":"PR","d":117.8},{"c":"Cruzmaltina","uf":"PR","d":130.4},{"c":"Curitiba","uf":"PR","d":463.1},{"c":"Curiúva","uf":"PR","d":255.5},{"c":"Cândido de Abreu","uf":"PR","d":179.1},{"c":"Céu Azul","uf":"PR","d":260.7},{"c":"Descalvado","uf":"SP","d":670.8},{"c":"Diamante D'Oeste","uf":"PR","d":265.9},{"c":"Diamante do Norte","uf":"PR","d":163.6},{"c":"Diamante do Sul","uf":"PR","d":178.4},{"c":"Dois Vizinhos","uf":"PR","d":284.8},{"c":"Douradina","uf":"PR","d":120.4},{"c":"Doutor Camargo","uf":"PR","d":41.3},{"c":"Doutor Ulysses","uf":"PR","d":399.3},{"c":"Dracena","uf":"SP","d":338.3},{"c":"Engenheiro Beltrão","uf":"PR","d":23.4},{"c":"Entre Rios do Oeste","uf":"PR","d":261.7},{"c":"Enéas Marques","uf":"PR","d":315.8},{"c":"Esperanca Nova","uf":"PR","d":173.6},{"c":"Espigão Alto do Iguaçu","uf":"PR","d":235.0},{"c":"Farol","uf":"PR","d":50.6},{"c":"Faxinal","uf":"PR","d":146.7},{"c":"Fazenda Rio Grande","uf":"PR","d":475.8},{"c":"Fernandes Pinheiro","uf":"PR","d":331.4},{"c":"Figueira","uf":"PR","d":260.1},{"c":"Flor da Serra do Sul","uf":"PR","d":361.9},{"c":"Floraí","uf":"PR","d":65.3},{"c":"Floresta","uf":"PR","d":52.0},{"c":"Florestópolis","uf":"PR","d":184.7},{"c":"Flórida","uf":"PR","d":113.9},{"c":"Formosa do Oeste","uf":"PR","d":131.9},{"c":"Foz do Iguaçu","uf":"PR","d":365.5},{"c":"Foz do Jordão","uf":"PR","d":276.8},{"c":"Francisco Alves","uf":"PR","d":182.5},{"c":"Francisco Beltrão","uf":"PR","d":330.5},{"c":"Fênix","uf":"PR","d":62.6},{"c":"General Carneiro","uf":"PR","d":395.7},{"c":"Godoy Moreira","uf":"PR","d":87.0},{"c":"Goiania","uf":"GO","d":1068.1},{"c":"Goioerê","uf":"PR","d":93.4},{"c":"Goioxim","uf":"PR","d":206.2},{"c":"Grandes Rios","uf":"PR","d":130.2},{"c":"Guairaçá","uf":"PR","d":120.3},{"c":"Guamiranga","uf":"PR","d":287.1},{"c":"Guapirama","uf":"PR","d":308.3},{"c":"Guaporema","uf":"PR","d":73.0},{"c":"Guaraci","uf":"PR","d":150.5},{"c":"Guaraniaçu","uf":"PR","d":192.4},{"c":"Guarapuava","uf":"PR","d":257.5},{"c":"Guaraqueçaba","uf":"PR","d":563.9},{"c":"Guaratuba","uf":"PR","d":569.9},{"c":"Guaíra","uf":"PR","d":234.2},{"c":"Honório Serpa","uf":"PR","d":329.6},{"c":"Ibaiti","uf":"PR","d":286.8},{"c":"Ibema","uf":"PR","d":200.7},{"c":"Ibiporã","uf":"PR","d":191.0},{"c":"Icaraíma","uf":"PR","d":157.6},{"c":"Iguaraçu","uf":"PR","d":112.4},{"c":"Iguatu","uf":"PR","d":154.3},{"c":"Imbaú","uf":"PR","d":234.7},{"c":"Imbituva","uf":"PR","d":309.6},{"c":"Inajá","uf":"PR","d":144.9},{"c":"Indiana","uf":"SP","d":269.0},{"c":"Indianópolis","uf":"PR","d":51.7},{"c":"Inácio Martins","uf":"PR","d":304.4},{"c":"Ipiranga","uf":"PR","d":293.8},{"c":"Iporã","uf":"PR","d":163.4},{"c":"Iracema do Oeste","uf":"PR","d":146.9},{"c":"Irati","uf":"PR","d":327.9},{"c":"Iretama","uf":"PR","d":101.3},{"c":"Itaguajé","uf":"PR","d":171.2},{"c":"Itaipulândia","uf":"PR","d":301.9},{"c":"Itaitinga","uf":"CE","d":3325.7},{"c":"Itambaracá","uf":"PR","d":280.0},{"c":"Itambé","uf":"PR","d":59.9},{"c":"Itapejara d'Oeste","uf":"PR","d":308.4},{"c":"Itapemirim","uf":"ES","d":1540.8},{"c":"Itaperuçu","uf":"PR","d":441.1},{"c":"Itaúna do Sul","uf":"PR","d":155.0},{"c":"Itupiranga","uf":"PA","d":2623.5},{"c":"Ivaiporã","uf":"PR","d":118.5},{"c":"Ivatuba","uf":"PR","d":35.6},{"c":"Ivaté","uf":"PR","d":127.7},{"c":"Ivaí","uf":"PR","d":264.8},{"c":"Jaboti","uf":"PR","d":302.0},{"c":"Jacarezinho","uf":"PR","d":326.5},{"c":"Jaguapitã","uf":"PR","d":148.0},{"c":"Jaguariaíva","uf":"PR","d":354.2},{"c":"Jandaia do Sul","uf":"PR","d":104.7},{"c":"Janiópolis","uf":"PR","d":66.7},{"c":"Japira","uf":"PR","d":293.2},{"c":"Japurá","uf":"PR","d":43.8},{"c":"Jardim Alegre","uf":"PR","d":111.9},{"c":"Jardim Olinda","uf":"PR","d":176.5},{"c":"Jataizinho","uf":"PR","d":200.3},{"c":"Jesuítas","uf":"PR","d":146.6},{"c":"Joaquim Távora","uf":"PR","d":325.3},{"c":"Jundiaí do Sul","uf":"PR","d":283.7},{"c":"Juranda","uf":"PR","d":103.6},{"c":"Jussara","uf":"PR","d":20.5},{"c":"Kaloré","uf":"PR","d":99.2},{"c":"Lapa","uf":"PR","d":442.6},{"c":"Laranjal","uf":"PR","d":155.4},{"c":"Laranjeiras do Sul","uf":"PR","d":227.9},{"c":"Leópolis","uf":"PR","d":236.4},{"c":"Lidianópolis","uf":"PR","d":111.8},{"c":"Lindoeste","uf":"PR","d":251.5},{"c":"Loanda","uf":"PR","d":146.7},{"c":"Lobato","uf":"PR","d":123.3},{"c":"Londrina","uf":"PR","d":175.2},{"c":"Lucas Do Rio Verde","uf":"MT","d":1556.5},{"c":"Luiziana","uf":"PR","d":75.3},{"c":"Lunardelli","uf":"PR","d":100.2},{"c":"Lupionópolis","uf":"PR","d":173.0},{"c":"Mallet","uf":"PR","d":358.4},{"c":"Mamborê","uf":"PR","d":76.9},{"c":"Mandaguari","uf":"PR","d":103.6},{"c":"Mandaguaçu","uf":"PR","d":73.9},{"c":"Mandirituba","uf":"PR","d":482.5},{"c":"Manfrinópolis","uf":"PR","d":347.7},{"c":"Mangueirinha","uf":"PR","d":304.1},{"c":"Manoel Ribas","uf":"PR","d":143.4},{"c":"Marechal Cândido Rondon","uf":"PR","d":231.8},{"c":"Maria Helena","uf":"PR","d":98.8},{"c":"Marialva","uf":"PR","d":92.2},{"c":"Marilena","uf":"PR","d":162.5},{"c":"Mariluz","uf":"PR","d":94.6},{"c":"Marilândia do Sul","uf":"PR","d":144.2},{"c":"Maringá","uf":"PR","d":81.4},{"c":"Maripá","uf":"PR","d":197.3},{"c":"Mariópolis","uf":"PR","d":359.8},{"c":"Marmeleiro","uf":"PR","d":338.6},{"c":"Marquinho","uf":"PR","d":188.4},{"c":"Martinópolis","uf":"SP","d":278.4},{"c":"Marumbi","uf":"PR","d":103.0},{"c":"Matelândia","uf":"PR","d":284.0},{"c":"Matinhos","uf":"PR","d":568.7},{"c":"Mato Rico","uf":"PR","d":135.0},{"c":"Maúa da Serra","uf":"PR","d":156.1},{"c":"Medianeira","uf":"PR","d":297.6},{"c":"Mercedes","uf":"PR","d":237.5},{"c":"Mirador","uf":"PR","d":82.8},{"c":"Miraselva","uf":"PR","d":165.9},{"c":"Missal","uf":"PR","d":292.9},{"c":"Moreira Sales","uf":"PR","d":81.6},{"c":"Morretes","uf":"PR","d":514.3},{"c":"Munhoz de Melo","uf":"PR","d":121.6},{"c":"Nossa Senhora das Graças","uf":"PR","d":144.9},{"c":"Nova Aliança do Ivaí","uf":"PR","d":84.7},{"c":"Nova América da Colina","uf":"PR","d":228.7},{"c":"Nova Aurora","uf":"PR","d":147.5},{"c":"Nova Cantu","uf":"PR","d":126.6},{"c":"Nova Esperança","uf":"PR","d":87.2},{"c":"Nova Esperança do Sudoeste","uf":"PR","d":313.7},{"c":"Nova Fátima","uf":"PR","d":244.0},{"c":"Nova Laranjeiras","uf":"PR","d":214.0},{"c":"Nova Londrina","uf":"PR","d":155.7},{"c":"Nova Olímpia","uf":"PR","d":91.7},{"c":"Nova Prata do Iguaçu","uf":"PR","d":282.7},{"c":"Nova Santa Bárbara","uf":"PR","d":216.2},{"c":"Nova Santa Rosa","uf":"PR","d":214.7},{"c":"Nova Tebas","uf":"PR","d":112.8},{"c":"Novo Itacolomi","uf":"PR","d":119.5},{"c":"Ortigueira","uf":"PR","d":203.4},{"c":"Osvaldo Cruz","uf":"SP","d":339.8},{"c":"Ourizona","uf":"PR","d":59.7},{"c":"Ouro Verde do Oeste","uf":"PR","d":233.2},{"c":"Paiçandu","uf":"PR","d":67.1},{"c":"Palmas","uf":"PR","d":381.8},{"c":"Palmeira","uf":"PR","d":384.9},{"c":"Palmital","uf":"PR","d":158.3},{"c":"Palotina","uf":"PR","d":191.0},{"c":"Paranacity","uf":"PR","d":122.4},{"c":"Paranaguá","uf":"PR","d":552.1},{"c":"Paranapoema","uf":"PR","d":163.1},{"c":"Paranavaí","uf":"PR","d":95.5},{"c":"Paraíso do Norte","uf":"PR","d":70.5},{"c":"Pato Bragado","uf":"PR","d":255.2},{"c":"Pato Branco","uf":"PR","d":343.2},{"c":"Paula Freitas","uf":"PR","d":389.5},{"c":"Paulo Frontin","uf":"PR","d":376.6},{"c":"Peabiru","uf":"PR","d":24.2},{"c":"Pedro Leopoldo","uf":"MG","d":1228.4},{"c":"Perobal","uf":"PR","d":123.7},{"c":"Pinhais","uf":"PR","d":472.5},{"c":"Pinhal de São Bento","uf":"PR","d":340.7},{"c":"Pinhalão","uf":"PR","d":304.4},{"c":"Pinhão","uf":"PR","d":285.8},{"c":"Pirapozinho","uf":"SP","d":240.9},{"c":"Piraquara","uf":"PR","d":486.9},{"c":"Piraí do Sul","uf":"PR","d":334.7},{"c":"Pitanga","uf":"PR","d":162.9},{"c":"Pitangueiras","uf":"PR","d":132.8},{"c":"Piên","uf":"PR","d":498.9},{"c":"Planaltina do Paraná","uf":"PR","d":121.2},{"c":"Planalto","uf":"PR","d":318.3},{"c":"Ponta Grossa","uf":"PR","d":342.2},{"c":"Pontal do Paraná","uf":"PR","d":563.0},{"c":"Porecatu","uf":"PR","d":196.1},{"c":"Porto Amazonas","uf":"PR","d":405.7},{"c":"Porto Barreiro","uf":"PR","d":247.4},{"c":"Porto Rico","uf":"PR","d":173.4},{"c":"Porto Vitória","uf":"PR","d":367.0},{"c":"Prado Ferreira","uf":"PR","d":163.6},{"c":"Pranchita","uf":"PR","d":353.0},{"c":"Presidente Bernardes","uf":"SP","d":269.9},{"c":"Presidente Castelo Branco","uf":"PR","d":77.7},{"c":"Presidente Epitácio","uf":"SP","d":281.7},{"c":"Presidente Prudente","uf":"SP","d":265.8},{"c":"Presidente Venceslau","uf":"SP","d":274.5},{"c":"Primeiro de Maio","uf":"PR","d":221.3},{"c":"Prudentópolis","uf":"PR","d":273.6},{"c":"Pérola","uf":"PR","d":157.3},{"c":"Pérola d'Oeste","uf":"PR","d":329.7},{"c":"Quarto Centenario","uf":"PR","d":106.7},{"c":"Quatiguá","uf":"PR","d":323.4},{"c":"Quatro Barras","uf":"PR","d":480.5},{"c":"Quatro Pontes","uf":"PR","d":224.0},{"c":"Quedas do Iguaçu","uf":"PR","d":240.9},{"c":"Querencia Do Norte","uf":"PR","d":162.8},{"c":"Quinta do Sol","uf":"PR","d":41.9},{"c":"Quitandinha","uf":"PR","d":473.3},{"c":"Ramilândia","uf":"PR","d":273.9},{"c":"Rancharia","uf":"SP","d":292.3},{"c":"Rancho Alegre","uf":"PR","d":218.4},{"c":"Rancho Alegre D'Oeste","uf":"PR","d":98.8},{"c":"Realeza","uf":"PR","d":309.9},{"c":"Rebouças","uf":"PR","d":340.3},{"c":"Regente Feijó","uf":"SP","d":260.3},{"c":"Renascença","uf":"PR","d":338.7},{"c":"Reserva","uf":"PR","d":237.0},{"c":"Reserva do Iguaçu","uf":"PR","d":291.7},{"c":"Ribeirão Claro","uf":"PR","d":351.8},{"c":"Ribeirão do Pinhal","uf":"PR","d":270.5},{"c":"Rio Azul","uf":"PR","d":343.0},{"c":"Rio Bom","uf":"PR","d":131.6},{"c":"Rio Bonito do Iguaçu","uf":"PR","d":239.2},{"c":"Rio Branco do Ivaí","uf":"PR","d":162.7},{"c":"Rio Branco do Sul","uf":"PR","d":443.1},{"c":"Rio Negro","uf":"PR","d":464.8},{"c":"Rio Verde","uf":"GO","d":854.0},{"c":"Rio de Janeiro","uf":"RJ","d":1185.8},{"c":"Rolândia","uf":"PR","d":151.8},{"c":"Roncador","uf":"PR","d":117.1},{"c":"Rondon","uf":"PR","d":64.1},{"c":"Rosário do Ivaí","uf":"PR","d":164.6},{"c":"Sabáudia","uf":"PR","d":129.9},{"c":"Salgado Filho","uf":"PR","d":354.2},{"c":"Salto do Itararé","uf":"PR","d":358.6},{"c":"Salto do Lontra","uf":"PR","d":300.4},{"c":"Salvador","uf":"BA","d":2370.9},{"c":"Santa Amélia","uf":"PR","d":266.5},{"c":"Santa Cecilia Do Pavao","uf":"PR","d":214.6},{"c":"Santa Cruz de Monte Castelo","uf":"PR","d":156.2},{"c":"Santa Fé","uf":"PR","d":130.0},{"c":"Santa Helena","uf":"PR","d":283.2},{"c":"Santa Inês","uf":"PR","d":171.9},{"c":"Santa Isabel do Ivaí","uf":"PR","d":143.3},{"c":"Santa Izabel do Oeste","uf":"PR","d":313.8},{"c":"Santa Lúcia","uf":"PR","d":268.4},{"c":"Santa Maria do Oeste","uf":"PR","d":178.2},{"c":"Santa Mariana","uf":"PR","d":260.9},{"c":"Santa Mônica","uf":"PR","d":124.8},{"c":"Santa Tereza do Oeste","uf":"PR","d":233.0},{"c":"Santa Terezinha de Itaipu","uf":"PR","d":339.1},{"c":"Santana do Itararé","uf":"PR","d":358.4},{"c":"Santo Anastácio","uf":"SP","d":269.3},{"c":"Santo Antônio da Platina","uf":"PR","d":308.5},{"c":"Santo Antônio do Caiuá","uf":"PR","d":144.2},{"c":"Santo Antônio do Paraíso","uf":"PR","d":232.5},{"c":"Santo Antônio do Sudoeste","uf":"PR","d":358.6},{"c":"Santo Inácio","uf":"PR","d":170.6},{"c":"Sapopema","uf":"PR","d":238.1},{"c":"Sarandi","uf":"PR","d":85.6},{"c":"Saudade do Iguaçu","uf":"PR","d":268.2},{"c":"Sengés","uf":"PR","d":382.3},{"c":"Seropédica","uf":"RJ","d":1123.7},{"c":"Serranópolis do Iguaçu","uf":"PR","d":302.2},{"c":"Sertaneja","uf":"PR","d":229.8},{"c":"Sertanópolis","uf":"PR","d":204.9},{"c":"Silvania","uf":"GO","d":1107.4},{"c":"Siqueira Campos","uf":"PR","d":333.1},{"c":"Socorro","uf":"SP","d":774.1},{"c":"Sulina","uf":"PR","d":271.8},{"c":"São Carlos do Ivaí","uf":"PR","d":63.0},{"c":"São Jerônimo da Serra","uf":"PR","d":216.3},{"c":"São Jorge d'Oeste","uf":"PR","d":276.2},{"c":"São Jorge do Ivaí","uf":"PR","d":50.5},{"c":"São Jorge do Patrocínio","uf":"PR","d":182.6},{"c":"São José da Boa Vista","uf":"PR","d":355.2},{"c":"São José das Palmeiras","uf":"PR","d":252.3},{"c":"São José dos Pinhais","uf":"PR","d":477.4},{"c":"São João","uf":"PR","d":287.5},{"c":"São João do Caiuá","uf":"PR","d":127.9},{"c":"São João do Ivaí","uf":"PR","d":84.9},{"c":"São João do Triunfo","uf":"PR","d":380.3},{"c":"São Manoel do Paraná","uf":"PR","d":57.8},{"c":"São Mateus do Sul","uf":"PR","d":391.0},{"c":"São Miguel do Iguaçu","uf":"PR","d":315.7},{"c":"São Pedro do Iguaçu","uf":"PR","d":240.9},{"c":"São Pedro do Ivaí","uf":"PR","d":76.2},{"c":"São Pedro do Paraná","uf":"PR","d":164.5},{"c":"São Sebastião da Amoreira","uf":"PR","d":218.6},{"c":"São Tomé","uf":"PR","d":37.2},{"c":"Tamarana","uf":"PR","d":171.6},{"c":"Tamboara","uf":"PR","d":78.6},{"c":"Tapejara","uf":"PR","d":54.5},{"c":"Tapira","uf":"PR","d":100.8},{"c":"Tarabai","uf":"SP","d":233.2},{"c":"Teixeira Soares","uf":"PR","d":335.9},{"c":"Telêmaco Borba","uf":"PR","d":244.7},{"c":"Terra Boa","uf":"PR","d":0.0},{"c":"Terra Rica","uf":"PR","d":148.6},{"c":"Terra Roxa","uf":"PR","d":216.7},{"c":"Tibagi","uf":"PR","d":277.5},{"c":"Tijucas do Sul","uf":"PR","d":508.5},{"c":"Toledo","uf":"PR","d":211.1},{"c":"Tomazina","uf":"PR","d":317.6},{"c":"Três Barras do Paraná","uf":"PR","d":247.5},{"c":"Tunas do Paraná","uf":"PR","d":457.1},{"c":"Tuneiras do Oeste","uf":"PR","d":56.3},{"c":"Tupãssi","uf":"PR","d":176.5},{"c":"Turvo","uf":"PR","d":212.0},{"c":"Ubiratã","uf":"PR","d":127.1},{"c":"Umuarama","uf":"PR","d":111.1},{"c":"Uniflor","uf":"PR","d":101.7},{"c":"União da Vitória","uf":"PR","d":382.3},{"c":"Uraí","uf":"PR","d":225.1},{"c":"Ventania","uf":"PR","d":288.3},{"c":"Vera Cruz do Oeste","uf":"PR","d":254.7},{"c":"Verê","uf":"PR","d":298.8},{"c":"Videira","uf":"SC","d":478.7},{"c":"Virmond","uf":"PR","d":226.6},{"c":"Vitorino","uf":"PR","d":350.1},{"c":"Vitória de Santo Antão","uf":"PE","d":3152.0},{"c":"Wenceslau Braz","uf":"PR","d":336.5},{"c":"Xambrê","uf":"PR","d":132.6},{"c":"Álvares Machado","uf":"SP","d":266.2},{"c":"Ângulo","uf":"PR","d":104.6}];
+const FREIGHT = {"frota":[{"filial":"01052","raio":50,"transportador":"GONCALVES & TORTOLA S/A","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":100,"transportador":"GONCALVES & TORTOLA S/A","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":150,"transportador":"GONCALVES & TORTOLA S/A","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":200,"transportador":"GONCALVES & TORTOLA S/A","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":50,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 LEVE","tarifa":0.377},{"filial":"01052","raio":100,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 LEVE","tarifa":0.42},{"filial":"01052","raio":150,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 LEVE","tarifa":0.544},{"filial":"01052","raio":200,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 LEVE","tarifa":0.617},{"filial":"01052","raio":250,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 LEVE","tarifa":0.653},{"filial":"01052","raio":300,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 LEVE","tarifa":0.653},{"filial":"01052","raio":350,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 LEVE","tarifa":0.653},{"filial":"01052","raio":50,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.248},{"filial":"01052","raio":100,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.25},{"filial":"01052","raio":150,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.29},{"filial":"01052","raio":200,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.33999999999999997},{"filial":"01052","raio":250,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.39},{"filial":"01052","raio":300,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.40599999999999997},{"filial":"01052","raio":350,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.42},{"filial":"01052","raio":400,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.42},{"filial":"01052","raio":450,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.42},{"filial":"01052","raio":500,"transportador":"GONCALVES & TORTOLA S/A","perfil":"3/4 Adaptado","tarifa":0.42},{"filial":"01052","raio":50,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.2},{"filial":"01052","raio":100,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.24},{"filial":"01052","raio":150,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.269},{"filial":"01052","raio":200,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.28},{"filial":"01052","raio":250,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.293},{"filial":"01052","raio":300,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.315},{"filial":"01052","raio":350,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.36},{"filial":"01052","raio":400,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.37},{"filial":"01052","raio":450,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.37},{"filial":"01052","raio":500,"transportador":"GONCALVES & TORTOLA S/A","perfil":"TOCO","tarifa":0.42}],"terceiro":[{"filial":"01052","raio":50,"transportador":"V C - TRANSPORTE LTDA.","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"V C - TRANSPORTE LTDA.","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"V C - TRANSPORTE LTDA.","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"V C - TRANSPORTE LTDA.","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"V C - TRANSPORTE LTDA.","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"V C - TRANSPORTE LTDA.","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"V C - TRANSPORTE LTDA.","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":50,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.2},{"filial":"01052","raio":100,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.24},{"filial":"01052","raio":150,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.29},{"filial":"01052","raio":200,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.3},{"filial":"01052","raio":250,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.35},{"filial":"01052","raio":300,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.38},{"filial":"01052","raio":350,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.39},{"filial":"01052","raio":400,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.39999999999999997},{"filial":"01052","raio":450,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.40599999999999997},{"filial":"01052","raio":500,"transportador":"TRANSPORTADORA ROVANI & DE PAULA LTDA -","perfil":"TRUCK","tarifa":0.407},{"filial":"01052","raio":50,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.31},{"filial":"01052","raio":150,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.33999999999999997},{"filial":"01052","raio":200,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.39},{"filial":"01052","raio":250,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.39999999999999997},{"filial":"01052","raio":300,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.40599999999999997},{"filial":"01052","raio":350,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.45999999999999996},{"filial":"01052","raio":400,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.46499999999999997},{"filial":"01052","raio":450,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.47},{"filial":"01052","raio":500,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.475},{"filial":"01052","raio":50,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"CARDOZO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":50,"transportador":"MF TRANSPORTADORA LTDA","perfil":"VAN COMUM","tarifa":0.48},{"filial":"01052","raio":100,"transportador":"MF TRANSPORTADORA LTDA","perfil":"VAN COMUM","tarifa":0.48},{"filial":"01052","raio":150,"transportador":"MF TRANSPORTADORA LTDA","perfil":"VAN COMUM","tarifa":0.48},{"filial":"01052","raio":200,"transportador":"MF TRANSPORTADORA LTDA","perfil":"VAN COMUM","tarifa":0.48},{"filial":"01052","raio":50,"transportador":"MF TRANSPORTADORA LTDA","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"MF TRANSPORTADORA LTDA","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"MF TRANSPORTADORA LTDA","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"MF TRANSPORTADORA LTDA","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"MF TRANSPORTADORA LTDA","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"MF TRANSPORTADORA LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"MF TRANSPORTADORA LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":50,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.2},{"filial":"01052","raio":100,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.2},{"filial":"01052","raio":150,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.21800000000000003},{"filial":"01052","raio":200,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.247},{"filial":"01052","raio":250,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.265},{"filial":"01052","raio":300,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.38},{"filial":"01052","raio":350,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.45},{"filial":"01052","raio":400,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.45},{"filial":"01052","raio":450,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.45},{"filial":"01052","raio":500,"transportador":"MF TRANSPORTADORA LTDA","perfil":"BI-TRUCK","tarifa":0.45},{"filial":"01052","raio":50,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":50,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.22},{"filial":"01052","raio":100,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.26},{"filial":"01052","raio":150,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.29},{"filial":"01052","raio":200,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.34},{"filial":"01052","raio":250,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.35},{"filial":"01052","raio":300,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.356},{"filial":"01052","raio":350,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.41},{"filial":"01052","raio":400,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.415},{"filial":"01052","raio":450,"transportador":"J CARDOSO TRANSPORTES LTDA","perfil":"TOCO","tarifa":0.415},{"filial":"01052","raio":50,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.22999999999999998},{"filial":"01052","raio":100,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.22999999999999998},{"filial":"01052","raio":150,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.22999999999999998},{"filial":"01052","raio":200,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.22999999999999998},{"filial":"01052","raio":250,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.22999999999999998},{"filial":"01052","raio":300,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.38},{"filial":"01052","raio":350,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.41},{"filial":"01052","raio":400,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.41},{"filial":"01052","raio":450,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.41},{"filial":"01052","raio":500,"transportador":"TRANSBRAS OPERACOES LOGISTICAS LTDA","perfil":"BI-TRUCK","tarifa":0.41},{"filial":"01052","raio":50,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":100,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":150,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":200,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":250,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":300,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":350,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":400,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":450,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":500,"transportador":"B. R. PAGANI LTDA","perfil":"BI-TRUCK","tarifa":0.353},{"filial":"01052","raio":50,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.31},{"filial":"01052","raio":150,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.33999999999999997},{"filial":"01052","raio":200,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.39},{"filial":"01052","raio":250,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.39999999999999997},{"filial":"01052","raio":300,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.40599999999999997},{"filial":"01052","raio":350,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.45999999999999996},{"filial":"01052","raio":400,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.46499999999999997},{"filial":"01052","raio":450,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.47},{"filial":"01052","raio":500,"transportador":"V C - TRANSPORTE LTDA.","perfil":"TOCO","tarifa":0.475},{"filial":"01052","raio":50,"transportador":"DODO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"DODO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"DODO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"DODO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"DODO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"DODO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"DODO TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":50,"transportador":"TRANSCORREA LTDA","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"TRANSCORREA LTDA","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"TRANSCORREA LTDA","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"TRANSCORREA LTDA","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"TRANSCORREA LTDA","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"TRANSCORREA LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"TRANSCORREA LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":50,"transportador":"TRANSPORTADORA ROSA DOS VENTOS LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":100,"transportador":"TRANSPORTADORA ROSA DOS VENTOS LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":150,"transportador":"TRANSPORTADORA ROSA DOS VENTOS LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":200,"transportador":"TRANSPORTADORA ROSA DOS VENTOS LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":50,"transportador":"DODO TRANSPORTES LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":100,"transportador":"DODO TRANSPORTES LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":150,"transportador":"DODO TRANSPORTES LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":200,"transportador":"DODO TRANSPORTES LTDA","perfil":"VUC","tarifa":0.48},{"filial":"01052","raio":50,"transportador":"E H VIEIRA TRANSPORTE RODOVIARIO DE CARG","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"E H VIEIRA TRANSPORTE RODOVIARIO DE CARG","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"E H VIEIRA TRANSPORTE RODOVIARIO DE CARG","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"E H VIEIRA TRANSPORTE RODOVIARIO DE CARG","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"E H VIEIRA TRANSPORTE RODOVIARIO DE CARG","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"E H VIEIRA TRANSPORTE RODOVIARIO DE CARG","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"E H VIEIRA TRANSPORTE RODOVIARIO DE CARG","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":50,"transportador":"WDB TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.27},{"filial":"01052","raio":100,"transportador":"WDB TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.312},{"filial":"01052","raio":150,"transportador":"WDB TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.354},{"filial":"01052","raio":200,"transportador":"WDB TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.39699999999999996},{"filial":"01052","raio":250,"transportador":"WDB TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.439},{"filial":"01052","raio":300,"transportador":"WDB TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481},{"filial":"01052","raio":350,"transportador":"WDB TRANSPORTES LTDA","perfil":"3/4 LEVE","tarifa":0.481}]};
+
+const RAIO_BANDS = [50,100,150,200,250,300,350,400,450,500];
+const PERFIL_LIMITS = {
+  'VUC': {min:2000, max:2500},
+  '3/4 LEVE': {min:4000, max:5000},
+  '3/4 Adaptado': {min:6000, max:6500},
+  'TOCO': {min:7000, max:7500},
+  'TRUCK': {min:12000, max:13000},
+  'BI-TRUCK': {min:16000, max:17000},
+  'VAN COMUM': {min:1700, max:2100}
+};
+const PERFIL_ORDER = ['VUC','VAN COMUM','3/4 LEVE','3/4 Adaptado','TRUCK','TOCO','BI-TRUCK'];
+
+function fmtR(v){ return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtR3(v){ return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:3, maximumFractionDigits:3}); }
+function fmtKg(v){ return v.toLocaleString('pt-BR', {maximumFractionDigits:0}) + ' kg'; }
+
+/* ---------- Populate city datalist ---------- */
+const cityList = document.getElementById('cityList');
+CITIES.forEach(c=>{
+  const opt = document.createElement('option');
+  opt.value = c.c + (CITIES.filter(x=>x.c===c.c).length>1 ? ' ('+c.uf+')' : '');
+  cityList.appendChild(opt);
+});
+
+let selectedCity = null;
+const cityInput = document.getElementById('cityInput');
+const cityHint = document.getElementById('cityHint');
+
+function findCity(text){
+  text = text.trim();
+  const m = text.match(/^(.*?)(?:\s*\(([A-Z]{2})\))?$/);
+  const name = m ? m[1].trim() : text;
+  const uf = m ? m[2] : null;
+  let matches = CITIES.filter(c=>c.c.toLowerCase()===name.toLowerCase());
+  if(uf) matches = matches.filter(c=>c.uf===uf);
+  return matches[0] || null;
+}
+
+function bandForDistance(d){
+  for(const b of RAIO_BANDS){ if(d<=b) return b; }
+  return null;
+}
+
+function selectCityByName(text){
+  cityInput.value = text;
+  const c = findCity(text);
+  selectedCity = c;
+  updateCityHint();
+  recalc();
+}
+
+function updateCityHint(){
+  if(!selectedCity){ cityHint.textContent = 'Cidade não encontrada na lista de cobertura.'; return; }
+  const band = bandForDistance(selectedCity.d);
+  if(band===null){
+    cityHint.innerHTML = `<b>${selectedCity.d.toLocaleString('pt-BR')} km</b> de Terra Boa — fora da tabela de raio (acima de 500km). Cotação avulsa necessária.`;
+  } else {
+    cityHint.innerHTML = `<b>${selectedCity.d.toLocaleString('pt-BR')} km</b> de Terra Boa → faixa de raio aplicada: <b>${band} km</b>`;
+  }
+}
+
+cityInput.addEventListener('input', ()=>{
+  selectedCity = findCity(cityInput.value);
+  updateCityHint();
+  recalc();
+});
+
+/* ---------- Perfil chips ---------- */
+let selectedPerfil = 'TOCO';
+const perfilChips = document.getElementById('perfilChips');
+const perfilHint = document.getElementById('perfilHint');
+function renderPerfilChips(){
+  perfilChips.innerHTML = PERFIL_ORDER.map(p=>
+    `<div class="chip ${p===selectedPerfil?'active':''}" data-perfil="${p}">${p}</div>`
+  ).join('');
+  perfilChips.querySelectorAll('.chip').forEach(c=>{
+    c.addEventListener('click', ()=>{
+      selectedPerfil = c.dataset.perfil;
+      renderPerfilChips();
+      renderCarrierOptions();
+      recalc();
+    });
+  });
+  const lim = PERFIL_LIMITS[selectedPerfil];
+  perfilHint.innerHTML = `Peso mínimo faturável: <b>${fmtKg(lim.min)}</b> · Capacidade máxima: <b>${fmtKg(lim.max)}</b>`;
+}
+renderPerfilChips();
+
+/* ---------- Operação chips ---------- */
+let selectedOp = 'propria';
+const opChips = document.getElementById('opChips');
+const carrierField = document.getElementById('carrierField');
+const carrierSelect = document.getElementById('carrierSelect');
+opChips.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    opChips.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    selectedOp = c.dataset.op;
+    carrierField.style.display = selectedOp==='escolher' ? 'block' : 'none';
+    renderCarrierOptions();
+    recalc();
+  });
+});
+
+function renderCarrierOptions(){
+  if(selectedOp!=='escolher') return;
+  const carriers = [...new Set(FREIGHT.terceiro.filter(d=>d.perfil===selectedPerfil).map(d=>d.transportador))];
+  carrierSelect.innerHTML = carriers.map(t=>`<option value="${t}">${t}</option>`).join('');
+}
+
+/* ---------- Peso inputs ---------- */
+document.getElementById('pesoAtual').addEventListener('input', recalc);
+document.getElementById('pesoExtra').addEventListener('input', recalc);
+carrierSelect.addEventListener('change', recalc);
+
+/* ---------- Tariff lookup ---------- */
+function getTarifaFromPool(pool, band){
+  if(pool.length===0) return null;
+  let exact = pool.filter(d=>d.raio===band);
+  if(exact.length>0){
+    const min = Math.min(...exact.map(d=>d.tarifa));
+    const item = exact.find(d=>d.tarifa===min);
+    return {tarifa:min, transportador:item.transportador, note:null};
+  }
+  const available = [...new Set(pool.map(d=>d.raio))].sort((a,b)=>a-b);
+  const higher = available.filter(r=>r>band);
+  if(higher.length>0){
+    const nb = higher[0];
+    const cands = pool.filter(d=>d.raio===nb);
+    const min = Math.min(...cands.map(d=>d.tarifa));
+    const item = cands.find(d=>d.tarifa===min);
+    return {tarifa:min, transportador:item.transportador, note:`Sem tarifa exata para ${band}km — usando a faixa de ${nb}km (mais próxima disponível).`};
+  }
+  const lower = available.filter(r=>r<band);
+  if(lower.length>0){
+    const nb = lower[lower.length-1];
+    const cands = pool.filter(d=>d.raio===nb);
+    const min = Math.min(...cands.map(d=>d.tarifa));
+    const item = cands.find(d=>d.tarifa===min);
+    return {tarifa:min, transportador:item.transportador, note:`Sem tarifa cadastrada para ${band}km neste perfil — estimativa baseada em ${nb}km (última faixa disponível).`};
+  }
+  return null;
+}
+
+function getTarifa(perfil, band, op, carrier){
+  let pool;
+  if(op==='propria') pool = FREIGHT.frota.filter(d=>d.perfil===perfil);
+  else if(op==='melhor') pool = FREIGHT.terceiro.filter(d=>d.perfil===perfil);
+  else pool = FREIGHT.terceiro.filter(d=>d.perfil===perfil && d.transportador===carrier);
+  const r = getTarifaFromPool(pool, band);
+  if(!r) return {tarifa:null, note:'Sem tarifas cadastradas para esse perfil/operação.'};
+  return r;
+}
+
+/* ---------- Weight bar ---------- */
+function renderWeightBar(pesoAtual, pesoExtra, lim){
+  const novoTotal = pesoAtual + pesoExtra;
+  const scaleMax = Math.max(lim.max, novoTotal) * 1.05;
+  const pctAtual = Math.min(100, pesoAtual/scaleMax*100);
+  const pctNovo = Math.min(100, novoTotal/scaleMax*100);
+  const pctMin = Math.min(100, lim.min/scaleMax*100);
+  const pctMax = Math.min(100, lim.max/scaleMax*100);
+  const fillPct = pesoExtra>0 ? pctNovo : pctAtual;
+  const fillColor = novoTotal > lim.max ? 'var(--bad)' : (novoTotal >= lim.min ? 'var(--good)' : 'var(--terceiro)');
+  return `
+    <div class="weightbar">
+      <div class="fill" style="width:${fillPct}%;background:${fillColor};"></div>
+      <div class="marker min" style="left:${pctMin}%;" title="Peso mínimo"></div>
+      <div class="marker" style="left:${pctMax}%;" title="Capacidade máxima"></div>
+    </div>
+    <div class="weightbar-labels">
+      <span>0 kg</span>
+      <span style="color:var(--good)">mín ${fmtKg(lim.min)}</span>
+      <span>máx ${fmtKg(lim.max)}</span>
+    </div>`;
+}
+
+/* ---------- Recent cities (from history) ---------- */
+async function renderRecentCities(){
+  const box = document.getElementById('recentCities');
+  try{
+    const list = await window.storage.list('sim:', false);
+    if(!list || !list.keys || list.keys.length===0){ box.innerHTML=''; return; }
+    const items = [];
+    for(const k of list.keys.slice(-30)){
+      try{
+        const r = await window.storage.get(k, false);
+        if(r && r.value) items.push(JSON.parse(r.value));
+      }catch(e){}
+    }
+    items.sort((a,b)=>b.ts-a.ts);
+    const seen = new Set(); const recent = [];
+    for(const it of items){ if(!seen.has(it.city)){ seen.add(it.city); recent.push(it.city); } if(recent.length>=5) break; }
+    if(recent.length===0){ box.innerHTML=''; return; }
+    box.innerHTML = '<div class="hint" style="margin-bottom:6px;">Recentes:</div><div class="chiprow">' +
+      recent.map(c=>`<div class="chip small" data-city="${c}">${c}</div>`).join('') + '</div>';
+    box.querySelectorAll('.chip').forEach(ch=>{
+      ch.addEventListener('click', ()=>selectCityByName(ch.dataset.city));
+    });
+  }catch(e){ box.innerHTML=''; }
+}
+
+/* ---------- History ---------- */
+async function renderHistory(){
+  const box = document.getElementById('histList');
+  box.innerHTML = '<div class="empty">Carregando...</div>';
+  try{
+    const list = await window.storage.list('sim:', false);
+    if(!list || !list.keys || list.keys.length===0){ box.innerHTML = '<div class="empty">Nenhuma simulação salva ainda.</div>'; return; }
+    const items = [];
+    for(const k of list.keys){
+      try{
+        const r = await window.storage.get(k, false);
+        if(r && r.value) items.push({key:k, ...JSON.parse(r.value)});
+      }catch(e){}
+    }
+    items.sort((a,b)=>b.ts-a.ts);
+    if(items.length===0){ box.innerHTML = '<div class="empty">Nenhuma simulação salva ainda.</div>'; return; }
+    box.innerHTML = items.slice(0,15).map(it=>{
+      const d = new Date(it.ts);
+      const dt = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+      return `<div class="histitem">
+        <div>
+          <b>${it.city}</b> · ${it.perfil} · ${fmtKg(it.pesoAtual)}
+          <div class="meta">${dt} · ociosidade ${fmtR(it.ociosidade)}</div>
+        </div>
+        <div class="del" data-key="${it.key}">excluir</div>
+      </div>`;
+    }).join('');
+    box.querySelectorAll('.del').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        try{ await window.storage.delete(el.dataset.key, false); }catch(e){}
+        renderHistory();
+        renderRecentCities();
+      });
+    });
+  }catch(e){
+    box.innerHTML = '<div class="empty">Não foi possível carregar o histórico.</div>';
+  }
+}
+
+document.getElementById('btnClearHist').addEventListener('click', async ()=>{
+  try{
+    const list = await window.storage.list('sim:', false);
+    if(list && list.keys){
+      for(const k of list.keys){ try{ await window.storage.delete(k, false); }catch(e){} }
+    }
+  }catch(e){}
+  renderHistory();
+  renderRecentCities();
+});
+
+/* ---------- Main calc state (kept for copy/save) ---------- */
+let lastCalc = null;
+
+function recalc(){
+  const resultCard = document.getElementById('resultCard');
+  const resultBody = document.getElementById('resultBody');
+  const compareCard = document.getElementById('compareCard');
+
+  const pesoAtual = parseFloat(document.getElementById('pesoAtual').value) || 0;
+  const pesoExtra = parseFloat(document.getElementById('pesoExtra').value) || 0;
+
+  if(!selectedCity || pesoAtual<=0){
+    resultCard.style.display = 'none';
+    compareCard.style.display = 'none';
+    lastCalc = null;
+    return;
+  }
+
+  const band = bandForDistance(selectedCity.d);
+  const lim = PERFIL_LIMITS[selectedPerfil];
+  const carrier = selectedOp==='escolher' ? carrierSelect.value : null;
+  const effectiveBand = band === null ? 500 : band;
+  const tarifaInfo = getTarifa(selectedPerfil, effectiveBand, selectedOp, carrier);
+
+  resultCard.style.display = 'block';
+
+  if(tarifaInfo.tarifa===null){
+    resultBody.innerHTML = `<div class="alert bad">${tarifaInfo.note}</div>`;
+    compareCard.style.display = 'none';
+    lastCalc = null;
+    return;
+  }
+
+  const tarifa = tarifaInfo.tarifa;
+  const pesoFaturado = Math.max(pesoAtual, lim.min);
+  const freteTotalHoje = tarifa * pesoFaturado;
+  const gap = Math.max(lim.min - pesoAtual, 0);
+  const ociosidade = tarifa * gap;
+  const custoRealPorKg = freteTotalHoje / pesoAtual;
+  const isOcioso = gap > 0;
+
+  let html = '';
+  html += `<div class="result-title">
+    ${selectedCity.c} (${selectedCity.uf}) · ${selectedCity.d.toLocaleString('pt-BR')} km
+    ${band===null ? '<span class="badge bad">FORA DO RAIO</span>' : `<span class="badge ok">Raio ${effectiveBand}km</span>`}
+  </div>`;
+
+  if(tarifaInfo.note) html += `<div class="alert">${tarifaInfo.note}</div>`;
+
+  html += renderWeightBar(pesoAtual, pesoExtra, lim);
+
+  html += `<div class="kv"><span class="k">Perfil / Operação</span><span class="v">${selectedPerfil} · ${selectedOp==='propria'?'Frota Própria':(tarifaInfo.transportador||'')}</span></div>`;
+  html += `<div class="kv"><span class="k">Tarifa aplicada</span><span class="v">${fmtR3(tarifa)} /kg</span></div>`;
+  html += `<div class="kv"><span class="k">Peso mínimo faturável</span><span class="v">${fmtKg(lim.min)}</span></div>`;
+  html += `<div class="kv"><span class="k">Peso atual da carga</span><span class="v">${fmtKg(pesoAtual)} ${isOcioso?'<span class="badge warn">OCIOSO</span>':'<span class="badge ok">OK</span>'}</span></div>`;
+  html += `<div class="kv"><span class="k">Frete total pago hoje</span><span class="v">${fmtR(freteTotalHoje)}</span></div>`;
+  html += `<div class="kv"><span class="k">Custo real por kg embarcado</span><span class="v">${fmtR3(custoRealPorKg)}</span></div>`;
+  html += `<div class="kv"><span class="k">Custo de ociosidade</span><span class="v" style="color:${isOcioso?'var(--bad)':'var(--good)'}">${isOcioso?fmtR(ociosidade):'R$ 0,00'}</span></div>`;
+
+  const descontoPorKg = pesoAtual>0 ? (ociosidade / pesoAtual) : 0;
+  html += `<div class="kv"><span class="k">Desconto que vale a pena conceder (por kg)</span><span class="v" style="color:${descontoPorKg>0.0005?'var(--good)':'var(--muted)'}">${fmtR3(descontoPorKg)}/kg</span></div>`;
+
+  let novoPesoTotal = pesoAtual, novoFreteTotal=freteTotalHoje, novoCustoPorKg=custoRealPorKg, novoDescontoPorKg=descontoPorKg, custoMarginalVenda=0, novaOciosidade=ociosidade, economiaOciosidade=0;
+  let excedeCapacidade=false, kgLivre=0, kgPago=0, completaMinimo=!isOcioso;
+
+  if(pesoExtra > 0){
+    novoPesoTotal = pesoAtual + pesoExtra;
+    const novoPesoFaturado = Math.max(novoPesoTotal, lim.min);
+    novoFreteTotal = tarifa * novoPesoFaturado;
+    novoCustoPorKg = novoFreteTotal / novoPesoTotal;
+    novaOciosidade = tarifa * Math.max(lim.min - novoPesoTotal, 0);
+    novoDescontoPorKg = novaOciosidade / novoPesoTotal;
+    custoMarginalVenda = Math.max(novoFreteTotal - freteTotalHoje, 0);
+    economiaOciosidade = Math.max(ociosidade - novaOciosidade, 0);
+    excedeCapacidade = novoPesoTotal > lim.max;
+    completaMinimo = novoPesoTotal >= lim.min;
+    kgLivre = Math.min(pesoExtra, gap);
+    kgPago = Math.max(pesoExtra - kgLivre, 0);
+
+    html += `<div class="note" style="border-top:1px solid var(--border);padding-top:14px;margin-top:16px;">
+      <div style="font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:12.5px;letter-spacing:.04em;color:var(--text);margin-bottom:10px;">Antes × depois da venda extra de ${fmtKg(pesoExtra)}</div>
+    </div>`;
+
+    html += `<div class="tblscroll"><table class="minicompare">
+      <thead><tr><th></th><th>Antes</th><th>Depois</th></tr></thead>
+      <tbody>
+        <tr><td>Peso carregado</td><td>${fmtKg(pesoAtual)}</td><td>${fmtKg(novoPesoTotal)}</td></tr>
+        <tr><td>Frete total</td><td>${fmtR(freteTotalHoje)}</td><td>${fmtR(novoFreteTotal)}</td></tr>
+        <tr><td>Custo real por kg</td><td>${fmtR3(custoRealPorKg)}</td><td>${fmtR3(novoCustoPorKg)}</td></tr>
+        <tr><td>Desconto que vale a pena conceder</td><td style="color:var(--good)">${fmtR3(descontoPorKg)}/kg</td><td style="color:var(--good)">${fmtR3(novoDescontoPorKg)}/kg</td></tr>
+      </tbody>
+    </table></div>`;
+
+    html += `<div class="kv"><span class="k">Redução da ociosidade total</span><span class="v" style="color:var(--good)">${fmtR(economiaOciosidade)}</span></div>`;
+
+    if(!completaMinimo){
+      html += `<div class="alert">Essa venda extra reduz o desconto necessário de ${fmtR3(descontoPorKg)}/kg para ${fmtR3(novoDescontoPorKg)}/kg, mas ainda não completa o peso mínimo do ${selectedPerfil} — ainda sobram ${fmtKg(lim.min-novoPesoTotal)} de espaço ocioso.</div>`;
+    } else if(kgPago>0){
+      html += `<div class="alert good">Essa venda extra completa o peso mínimo. Dos ${fmtKg(pesoExtra)}, <b>${fmtKg(kgLivre)}</b> entram sem aumentar o frete e <b>${fmtKg(kgPago)}</b> pagam tarifa cheia (${fmtR3(tarifa)}/kg) por ultrapassar o mínimo.</div>`;
+    } else {
+      html += `<div class="alert good">Essa venda extra completa exatamente o peso mínimo — o frete total pago não aumenta e a ociosidade zera.</div>`;
+    }
+    if(excedeCapacidade){
+      html += `<div class="alert bad">Atenção: o peso total (${fmtKg(novoPesoTotal)}) ultrapassa a capacidade máxima do ${selectedPerfil} (${fmtKg(lim.max)}). Avalie outro perfil de veículo.</div>`;
+    }
+  }
+
+  resultBody.innerHTML = html;
+
+  lastCalc = {
+    ts: Date.now(), city: selectedCity.c, uf: selectedCity.uf, distKm: selectedCity.d,
+    band: effectiveBand, perfil: selectedPerfil, op: selectedOp, transportador: tarifaInfo.transportador||'Frota Própria',
+    tarifa, pesoAtual, pesoExtra, lim, freteTotalHoje, ociosidade, custoRealPorKg, descontoPorKg,
+    novoPesoTotal, novoFreteTotal, novoCustoPorKg, novoDescontoPorKg, completaMinimo, custoMarginalVenda, economiaOciosidade, kgLivre, kgPago, excedeCapacidade
+  };
+
+  renderCompareTable(effectiveBand, pesoAtual, pesoExtra);
+}
+
+/* ---------- Compare table across perfis (Própria vs Terceiro) ---------- */
+function groupMetrics(pool, band, pesoAtual, pesoExtra, lim){
+  const info = getTarifaFromPool(pool, band);
+  if(!info) return null;
+  const pesoFaturado = Math.max(pesoAtual, lim.min);
+  const custoRealPorKg = (info.tarifa * pesoFaturado) / pesoAtual;
+  const descontoPorKg = custoRealPorKg - info.tarifa;
+  let novoCustoPorKg = null;
+  if(pesoExtra>0){
+    const novoTotal = pesoAtual + pesoExtra;
+    const novoFaturado = Math.max(novoTotal, lim.min);
+    novoCustoPorKg = (info.tarifa * novoFaturado) / novoTotal;
+  }
+  return {tarifa:info.tarifa, custoRealPorKg, descontoPorKg, novoCustoPorKg, aprox: !!info.note, transportador: info.transportador};
+}
+
+function renderCompareTable(band, pesoAtual, pesoExtra){
+  const compareCard = document.getElementById('compareCard');
+  compareCard.style.display = 'block';
+  const novoPeso = pesoAtual + pesoExtra;
+  const showNovo = pesoExtra > 0;
+
+  // First pass: gather all valid entries to find the best (lowest custoRealPorKg, capacity OK)
+  const entries = [];
+  PERFIL_ORDER.forEach(p=>{
+    const lim = PERFIL_LIMITS[p];
+    const excede = novoPeso > lim.max || pesoAtual > lim.max;
+    const poolPropria = FREIGHT.frota.filter(d=>d.perfil===p);
+    const poolTerceiro = FREIGHT.terceiro.filter(d=>d.perfil===p);
+    const propria = groupMetrics(poolPropria, band, pesoAtual, pesoExtra, lim);
+    const terceiro = groupMetrics(poolTerceiro, band, pesoAtual, pesoExtra, lim);
+    if(propria && !excede) entries.push({perfil:p, grupo:'propria', custo:propria.custoRealPorKg});
+    if(terceiro && !excede) entries.push({perfil:p, grupo:'terceiro', custo:terceiro.custoRealPorKg});
+  });
+  let bestKey = null;
+  if(entries.length>0){
+    const best = entries.reduce((a,b)=> a.custo<=b.custo ? a : b);
+    bestKey = best.perfil + '|' + best.grupo;
+  }
+
+  let thead = `<thead>
+    <tr>
+      <th rowspan="2">Perfil</th>
+      <th rowspan="2">Peso mín.</th>
+      <th colspan="${showNovo?4:3}" style="text-align:center;color:var(--frota);">Frota Própria</th>
+      <th colspan="${showNovo?4:3}" style="text-align:center;color:var(--terceiro);">Terceiro (melhor)</th>
+      <th rowspan="2">Status</th>
+    </tr>
+    <tr>
+      <th style="text-align:right;">Tabela</th><th>Desc./kg</th><th>Real/kg</th>${showNovo?'<th>Novo/kg</th>':''}
+      <th style="text-align:right;">Tabela</th><th>Desc./kg</th><th>Real/kg</th>${showNovo?'<th>Novo/kg</th>':''}
+    </tr>
+  </thead>`;
+
+  let rows = '';
+  PERFIL_ORDER.forEach(p=>{
+    const lim = PERFIL_LIMITS[p];
+    const isCurrent = p===selectedPerfil;
+    const poolPropria = FREIGHT.frota.filter(d=>d.perfil===p);
+    const poolTerceiro = FREIGHT.terceiro.filter(d=>d.perfil===p);
+    const propria = groupMetrics(poolPropria, band, pesoAtual, pesoExtra, lim);
+    const terceiro = groupMetrics(poolTerceiro, band, pesoAtual, pesoExtra, lim);
+
+    if(!propria && !terceiro){
+      rows += `<tr class="invalid ${isCurrent?'current':''}"><td>${p}</td><td colspan="${showNovo?9:7}">sem tarifa cadastrada</td></tr>`;
+      return;
+    }
+    const excede = novoPeso > lim.max || pesoAtual > lim.max;
+    const gap = Math.max(lim.min - pesoAtual, 0);
+    const status = excede ? '<span class="badge bad">excede capacidade</span>' : (gap>0 ? '<span class="badge warn">ocioso</span>' : '<span class="badge ok">ok</span>');
+
+    const cellsFor = (g, grupo) => {
+      if(!g) return `<td>—</td><td>—</td><td>—</td>${showNovo?'<td>—</td>':''}`;
+      const isBest = !excede && bestKey===(p+'|'+grupo);
+      const realStyle = isBest ? `style="color:var(--good);font-weight:700;"` : '';
+      return `<td>${fmtR3(g.tarifa)}${g.aprox?' *':''}</td><td>${fmtR3(g.descontoPorKg)}</td><td ${realStyle}>${fmtR3(g.custoRealPorKg)}${isBest?' 🏆':''}</td>${showNovo?`<td>${fmtR3(g.novoCustoPorKg)}</td>`:''}`;
+    };
+
+    rows += `<tr class="${excede?'invalid':''} ${isCurrent?'current':''}">
+      <td>${p}</td>
+      <td>${fmtKg(lim.min)}</td>
+      ${cellsFor(propria,'propria')}
+      ${cellsFor(terceiro,'terceiro')}
+      <td>${status}</td>
+    </tr>`;
+  });
+  document.getElementById('compareTable').innerHTML = thead + '<tbody>'+rows+'</tbody>';
+  const note = document.getElementById('compareNote');
+  if(note) note.innerHTML = bestKey ? `🏆 marca a melhor opção (menor custo real por kg) entre todas as combinações de perfil e operação disponíveis para essa cidade e peso.` : '';
+}
+
+/* ---------- Copy / Save ---------- */
+document.getElementById('btnCopy').addEventListener('click', ()=>{
+  if(!lastCalc) return;
+  const c = lastCalc;
+  let txt = `*Simulação de Frete — ${c.city} (${c.uf})*\n`;
+  txt += `Distância: ${c.distKm.toLocaleString('pt-BR')} km · Raio: ${c.band}km\n`;
+  txt += `Perfil: ${c.perfil} · Operação: ${c.op==='propria'?'Frota Própria':c.transportador}\n`;
+  txt += `Tarifa: ${fmtR3(c.tarifa)}/kg · Peso mínimo: ${fmtKg(c.lim.min)}\n`;
+  txt += `Peso atual: ${fmtKg(c.pesoAtual)}\n`;
+  txt += `Frete total: ${fmtR(c.freteTotalHoje)} · Custo real/kg: ${fmtR3(c.custoRealPorKg)}\n`;
+  txt += `Ociosidade: ${fmtR(c.ociosidade)} · Desconto que vale a pena conceder: ${fmtR3(c.descontoPorKg)}/kg\n`;
+  if(c.pesoExtra>0){
+    txt += `\nVenda extra: ${fmtKg(c.pesoExtra)}\n`;
+    txt += `Novo peso total: ${fmtKg(c.novoPesoTotal)} · Novo frete: ${fmtR(c.novoFreteTotal)}\n`;
+    txt += `Custo por kg: ${fmtR3(c.custoRealPorKg)} → ${fmtR3(c.novoCustoPorKg)}\n`;
+    txt += `Desconto que vale a pena conceder: ${fmtR3(c.descontoPorKg)}/kg → ${fmtR3(c.novoDescontoPorKg)}/kg\n`;
+    txt += `Redução de ociosidade: ${fmtR(c.economiaOciosidade)}\n`;
+    if(!c.completaMinimo) txt += `Ainda não completa o peso mínimo (faltam ${fmtKg(c.lim.min-c.novoPesoTotal)})\n`;
+    if(c.excedeCapacidade) txt += `⚠️ Excede a capacidade máxima do veículo (${fmtKg(c.lim.max)})\n`;
+  }
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn = document.getElementById('btnCopy');
+    const original = btn.textContent;
+    btn.textContent = 'Copiado!';
+    setTimeout(()=>btn.textContent=original, 1500);
+  }).catch(()=>{ alert('Não foi possível copiar automaticamente. Texto:\n\n'+txt); });
+});
+
+document.getElementById('btnSave').addEventListener('click', async ()=>{
+  if(!lastCalc) return;
+  const key = 'sim:' + lastCalc.ts;
+  try{
+    await window.storage.set(key, JSON.stringify(lastCalc), false);
+    const btn = document.getElementById('btnSave');
+    const original = btn.textContent;
+    btn.textContent = 'Salvo!';
+    setTimeout(()=>btn.textContent=original, 1500);
+    renderHistory();
+    renderRecentCities();
+  }catch(e){
+    alert('Não foi possível salvar. Tente novamente.');
+  }
+});
+
+renderCarrierOptions();
+renderHistory();
+renderRecentCities();
+</script>
+</body>
+</html>
