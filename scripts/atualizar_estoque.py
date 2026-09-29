@@ -1559,6 +1559,22 @@ def _sem_acento(txt):
     )
 
 
+# Seção fixa por código de produto - "força a mão" do classificador.
+#
+# Use quando a descrição que vem do ERP não tem as palavras que o
+# classificador procura (CONGELADA / RESFRIADA / IQF) e por isso o item cai
+# em "Não Classificados" toda vez que a rodada roda. Ex: "CMS" e "RECORTE
+# FILE PEITO + FILE COXA" são só isso, sem dizer o estado do produto.
+#
+# Formato: "CODIGO DO PRODUTO": ("secao", "GRUPO")
+# As combinações válidas estão em SECOES_VALIDAS, logo abaixo do
+# classificador. Para adicionar um item novo, copie uma linha e troque.
+SECAO_FIXA_POR_CODIGO = {
+    "FRMRCANMI000002": ("congelados", "GRUPO PEITO"),   # Recorte Filé Peito + Filé Coxa
+    "FRMSCANMI000005": ("congelados", "GRUPO MIUDOS"),  # CMS
+}
+
+
 def classificar_produto_novo(nome_produto):
     """Decide em qual seção/grupo do painel um produto novo deve entrar,
     lendo palavras-chave do nome/descrição do ERP. A descrição é o único
@@ -2041,7 +2057,8 @@ def inserir_cards_novos(html, data, linhas_brutas, programacao=None, nomes_produ
     itens += [(c, nomes_produto_programacao.get(c, c), 0) for c in codigos_somente_programacao]
 
     for codigo, nome_produto, saldo in itens:
-        destino = classificar_produto_novo(nome_produto)
+        # a seção fixada na mão tem prioridade sobre a adivinhação
+        destino = SECAO_FIXA_POR_CODIGO.get(codigo) or classificar_produto_novo(nome_produto)
 
         if destino is None:
             # 1º fallback: pede pra IA (Claude) classificar pela descrição,
