@@ -72,6 +72,14 @@ NOME_CANONICO = {
     "FRCSCANMI000052": "Coxa Pilão",
     "FRMDBELME000007": "Fígado- Bandeja- BELLAVES",
     "FRMDBELME000008": "Moela- Bandeja- BELLAVES",
+    # Bandeja resfriada - o Protheus manda a descrição completa
+    # ("Carne Resfriada de Frango c/ Osso s/ Pele Pescoco Bdj 15 X 600 G
+    # Cx 12 Kg"), que não cabe no card; o peso da caixa já aparece na
+    # linha do código logo abaixo do nome.
+    "FRMDCANMI000038": "Coração",
+    "FRMDCANMI000041": "Pescoço",
+    "FRPECANMI000003": "Pés",
+    "FRSACANMI000002": "Sambiquira",
     "FRINCANMI000017": "Frango Carcaça Temperado",
     "FRINCANMI000003": "Frango inteiro",
     "FRINCANMI000004": "Frango temperado 18kg",
