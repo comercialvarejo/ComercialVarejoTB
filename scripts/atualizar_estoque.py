@@ -1755,11 +1755,21 @@ def carregar_validades(csv_text):
         except (ValueError, IndexError):
             peso = 0
         data_str = r[2].strip() if len(r) > 2 else ""
-        if not data_str:
-            continue
+        # Linha sem data utilizável - célula vazia, o texto "Sem data", ou
+        # qualquer formato diferente de dd/mm/aaaa - entra assim mesmo,
+        # marcada com "sd": True. Antes ela era descartada em silêncio e o
+        # peso simplesmente sumia do painel, sem aviso nem no log (eram ~16
+        # toneladas invisíveis quando isso foi descoberto). O painel mostra
+        # essas linhas com o texto original no lugar da data, e elas não
+        # entram na conta de "vence em X dias" nem marcam o card como
+        # vencido - só aparecem e somam no total.
         try:
             data_venc = datetime.strptime(data_str, "%d/%m/%Y")
         except ValueError:
+            validades.setdefault(codigo, {"entries": [], "hv": False})
+            validades[codigo]["entries"].append(
+                {"d": data_str or "Sem data", "p": peso, "v": False, "sd": True}
+            )
             continue
         vencido = data_venc < hoje
         entry = {"d": data_str, "p": peso, "v": vencido}
@@ -2224,9 +2234,16 @@ def atualizar_html(html, data, validades=None, linhas_brutas=None, programacao=N
                 btn = f' <button class="val-btn val-btn-alert" onclick="toggleVal(this)" data-code="{code}">⚠️ ver validades</button>'
             else:
                 btn = f' <button class="val-btn" onclick="toggleVal(this)" data-code="{code}">📅 ver validades</button>'
+            # A âncora NÃO pode exigir o </div> logo depois do Cód. Canção:
+            # se o card já ganhou o botão "🚚 programação" antes, ele fica no
+            # meio, a âncora não bate e o botão de validade nunca é criado -
+            # para sempre, mesmo com validade cadastrada (eram 14 produtos
+            # nessa situação quando isso foi descoberto). Inserindo logo após
+            # o Cód. Canção, o botão de validade fica na frente do de
+            # programação, que é a ordem esperada.
             novo_block = re.sub(
-                r'(<div class="card-cancao">Cód\. Canção: [^<]*</div>)</div>',
-                r'\1' + btn + '</div>', block, count=1,
+                r'(<div class="card-cancao">Cód\. Canção: [^<]*</div>)',
+                r'\1' + btn, block, count=1,
             )
             if novo_block != block:
                 block = novo_block

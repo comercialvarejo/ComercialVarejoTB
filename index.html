@@ -90,6 +90,7 @@
   html[data-theme="dark"] .kpi-total .kpi-num { color: #7ea2e8; }
   html[data-theme="dark"] .val-btn { background: #223049; border-color: #35486b; color: #9cb8f0; }
   html[data-theme="dark"] .val-tag-vencido { background: #4a2622; }
+  .val-tag-semdata { background: #3a2f1a; color: #e8c478; }
   html[data-theme="dark"] .card.no-stock { border-left-color: #4a4038; }
 
   .theme-toggle {
@@ -750,6 +751,8 @@
   .val-table td { padding: 7px 9px; border-bottom: 1px solid var(--line-soft); }
   .val-row-vencido td { background: var(--red-soft); color: var(--red-status); font-weight: 700; }
   .val-tag-vencido { background: #eec2bd; color: var(--red-status); border-radius: 4px; padding: 1px 6px; font-size: 9.5px; font-weight: 800; margin-left: 6px; }
+  .val-tag-semdata { background: var(--gold-lt); color: var(--gold); border-radius: 4px; padding: 1px 6px; font-size: 9.5px; font-weight: 800; margin-left: 6px; }
+  .val-row-semdata td { color: var(--ink-2); font-style: italic; }
   .val-total { text-align: right; font-size: 11px; color: var(--muted); padding: 6px 9px; font-weight: 600; }
   .has-val { flex-wrap: wrap; }
   .has-val .card-info { flex: 1; min-width: 0; }
@@ -1702,18 +1705,19 @@ updateSectionCounts();
       if (valInfo && valInfo.entries && valInfo.entries.length) {
         var soonest = null, isVencido = false;
         valInfo.entries.forEach(function(e) {
+          if (e.sd) { return; }   // linha sem data nao conta pro selo
           var parts = e.d.split('/');
           var d = new Date(parts[2], parts[1]-1, parts[0]);
           if (e.v) { isVencido = true; }
           if (soonest === null || d < soonest) soonest = d;
         });
-        var diffDays = Math.round((soonest - today) / 86400000);
+        var diffDays = (soonest === null) ? null : Math.round((soonest - today) / 86400000);
         var badge = document.createElement('span');
         if (isVencido) {
           badge.className = 'exp-badge exp-vencido';
           badge.textContent = String.fromCodePoint(9888) + ' VENCIDO';
           cardInfo.appendChild(badge);
-        } else if (diffDays <= 5) {
+        } else if (diffDays !== null && diffDays <= 5) {
           badge.className = 'exp-badge exp-soon';
           badge.textContent = String.fromCodePoint(128197) + ' vence em ' + diffDays + 'd';
           cardInfo.appendChild(badge);
@@ -1828,10 +1832,13 @@ updateSectionCounts();
       var valInfo = (typeof VALIDADES !== 'undefined') ? VALIDADES[code] : null;
       if (valInfo && valInfo.entries) {
         valInfo.entries.forEach(function(e) {
-          var parts = e.d.split('/');
-          var d = new Date(parts[2], parts[1]-1, parts[0]);
-          var diffDays = Math.round((d - today) / 86400000);
-          vencimentos.push({data: e.d, peso: e.p, vencido: e.v, diasRestantes: diffDays});
+          var diffDays = null;
+          if (!e.sd) {
+            var parts = e.d.split('/');
+            var d = new Date(parts[2], parts[1]-1, parts[0]);
+            diffDays = Math.round((d - today) / 86400000);
+          }
+          vencimentos.push({data: e.d, peso: e.p, vencido: e.v, semData: !!e.sd, diasRestantes: diffDays});
         });
       }
 
@@ -2093,8 +2100,9 @@ updateSectionCounts();
     var info = VALIDADES[code];
     if (!info) return;
     var rows = info.entries.map(function(e) {
-      var cls = e.v ? ' class="val-row-vencido"' : '';
+      var cls = e.v ? ' class="val-row-vencido"' : (e.sd ? ' class="val-row-semdata"' : '');
       var tag = e.v ? '<span class="val-tag-vencido">VENCIDO</span>' : '';
+      if (e.sd) { tag = '<span class="val-tag-semdata">SEM DATA</span>'; }
       return '<tr' + cls + '><td>' + e.d + tag + '</td><td style="text-align:right;font-weight:600;">' + e.p.toLocaleString('pt-BR') + ' kg</td></tr>';
     }).join('');
     var total = info.entries.reduce(function(s,e){return s+e.p;},0);
