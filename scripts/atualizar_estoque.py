@@ -54,6 +54,8 @@ REPO_PEDIDOS_PATH = "pedidos-em-aberto.html"
 # na lista - nunca da descrição bruta do ERP (que é longa/inconsistente).
 # Só cai para a descrição do ERP quando o código não está mapeado aqui.
 NOME_CANONICO = {
+    "FRMDCANMI000039": "Fígado BDJ 600g",
+    "FRMDCANMI000040": "Moela BDJ 600g",
     "FRPTCANMI000045": "Filé de Peito Individual Cx Pp 20kg",
     "FRINCANMI000002": "Frango Inteiro",
     "FRASCANMI000037": "Asa",
