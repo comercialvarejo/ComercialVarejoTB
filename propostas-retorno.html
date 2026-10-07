@@ -88,6 +88,12 @@ button{cursor:pointer}
 .btn.ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
 .btn.ghost:hover{background:var(--surface-2)}
 /* limpar */
+.lib{margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2,transparent)}
+.lib-t{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.lib-l{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:3px 0;font-size:14px}
+.lib-l s{color:var(--ink-3)}
+.lib-tot{border-top:1px solid var(--line);margin-top:4px;padding-top:6px}
+.lib-n{font-size:12px;color:var(--ink-3);margin-top:4px}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn.danger:disabled{opacity:.5;cursor:not-allowed}
 .btn.small{padding:5px 10px;font-size:13px}
@@ -479,7 +485,8 @@ async function responder(){
   if(S.busy) return; S.busy=true; S.rdErr=null; render();
   const now=new Date().toISOString(); const prev=x.resposta;
   const anteriores=prev?[...(x.anteriores||[]),prev]:(x.anteriores||[]);
-  const resposta={dec:rd.dec,com:rd.com.trim(),cvi,cd,por:S.uid,porNome:meuNome(),em:now,versao:x.versao||1};
+  const base=itens(x).map((i,k)=>({produto:i.produto,qtd:Number(i.qtd)||0,valor:Number(i.valor)||0,contra:cvi&&cvi[k]!=null?cvi[k]:null}));
+  const resposta={dec:rd.dec,com:rd.com.trim(),cvi,cd,por:S.uid,porNome:meuNome(),em:now,versao:x.versao||1,base};
   try{await updateDoc(doc(S.db,'propostas',id),{resposta,anteriores});S.rd=null;S.respEdit=false;toast('Retorno enviado para '+vend(x)+'.');
     const nx={...x,resposta,anteriores};
     avisar(x.vendedorEmail,`Retorno da proposta ${x.n} · ${x.cliente}: ${ST[resposta.dec]||resposta.dec}`,summaryText(nx));}
@@ -723,6 +730,21 @@ function summaryText(x){const r=cur(x),st=status(x),t=tot(x);const contra=r&&r.d
     ...itens(x).map((i,k)=>`• ${i.produto}: ${fmt(i.qtd)} kg × ${pkg(i.valor)} = ${brl(i.qtd*i.valor)}${contra&&r.cvi&&r.cvi[k]!=null?` → contra ${pkg(r.cvi[k])}`:''}`),
     `Total: ${fmt(t.kg)} kg · ${brl(t.rs)} (média ${pkg(t.med)})${x.desc?' · Desconto: '+fmt(x.desc)+'%':''}`,x.obs?`Obs.: ${x.obs}`:'',`Status: ${ST[st]}`,
     r?`Retorno: ${r.com||DEC[r.dec]}${contra?` · novo total ${brl(totContra(x,r))}${r.cd!=null?', desconto '+fmt(r.cd)+'%':''}`:''}`:''].filter(Boolean).join('\n');}
+function liberadoAntes(a,x){
+  if(!a||(a.dec!=='contra'&&a.dec!=='aprovada')) return '';
+  let linhas=[];
+  if(Array.isArray(a.base)&&a.base.length){
+    linhas=a.base.map(b=>({produto:b.produto,qtd:b.qtd,pedido:b.valor,lib:a.dec==='contra'?(b.contra!=null?b.contra:b.valor):b.valor}));
+  }else if(a.dec==='contra'&&Array.isArray(a.cvi)){
+    const atual=itens(x);
+    linhas=a.cvi.map((v,k)=>v==null?null:({produto:atual[k]?atual[k].produto:'Item '+(k+1),qtd:null,pedido:null,lib:v})).filter(Boolean);
+  }
+  if(!linhas.length&&a.cd==null) return '';
+  let tKg=0,tRs=0,completo=linhas.length&&linhas.every(l=>l.qtd!=null);
+  const ls=linhas.map(l=>{if(l.qtd!=null){tKg+=l.qtd;tRs+=l.qtd*l.lib;}
+    return `<div class="lib-l"><span>${esc(l.produto)}${l.qtd!=null?' · '+fmt(l.qtd)+' kg':''}</span><span class="num">${l.pedido!=null&&l.pedido!==l.lib?'<s>'+pkg(l.pedido)+'</s> → ':''}<b>${pkg(l.lib)}</b></span></div>`;}).join('');
+  return `<div class="lib"><div class="lib-t">${a.dec==='contra'?'Liberado nesta contraproposta':'Liberado nesta aprovação'}</div>${ls}${a.cd!=null?`<div class="lib-l"><span>Desconto liberado</span><span class="num"><b>${dec2(a.cd)}%</b></span></div>`:''}${completo?`<div class="lib-l lib-tot"><span>Total liberado</span><span class="num"><b>${brl(tRs)}</b>${tKg?' · '+pkg(tRs/tKg):''}</span></div>`:''}${!Array.isArray(a.base)&&linhas.length?'<div class="lib-n">Preços por item, na ordem dos itens desta proposta.</div>':''}</div>`;
+}
 function renderDetail(m,id,adm){
   const x=get(id); const st=status(x); const c=cur(x);
   let h=`<section class="card"><div class="phead"><div><div class="eyebrow num">${adm?esc(vend(x))+(isRep(x)?' · representante':'')+' · ':''}Proposta ${x.n}${(x.versao||1)>1?' · versão '+x.versao:''}</div><h2>${esc(x.cliente)} <span class="pill st-${st}">${esc(ST[st])}</span></h2></div>
@@ -749,7 +771,7 @@ function renderDetail(m,id,adm){
   if(x.obs) h+=`<div class="note"><b>Observações do vendedor:</b> ${esc(x.obs)}</div>`;
   if(c&&!(adm&&S.respEdit)){h+=`<div class="sec" style="padding-bottom:4px"><h3>Retorno</h3></div>`+verdictBox(c,st==='aceita'?'aceita':c.dec,x);}
   const prevs=[...(x.anteriores||[]),...(x.resposta&&!c?[x.resposta]:[])];
-  if(prevs.length) h+=`<div class="sec"><h3>Retornos anteriores</h3><div class="prev">${prevs.slice().reverse().map(a=>`<div><b>${esc(DEC[a.dec])}</b> · v${a.versao||1} · ${esc(a.porNome||'')} · ${fDT(a.em)}${a.com?`<br>${esc(a.com)}`:''}</div>`).join('')}</div></div>`;
+  if(prevs.length) h+=`<div class="sec"><h3>Retornos anteriores</h3><div class="prev">${prevs.slice().reverse().map(a=>`<div><b>${esc(DEC[a.dec])}</b> · v${a.versao||1} · ${esc(a.porNome||'')} · ${fDT(a.em)}${a.com&&a.com.trim()!=='.'?`<br>${esc(a.com)}`:''}${liberadoAntes(a,x)}</div>`).join('')}</div></div>`;
   if(!adm&&st==='aguardando') h+=`<div class="note">Enviada aos aprovadores. O retorno aparece aqui assim que um deles responder.</div>`;
   h+=`</section>`;
   if(!adm&&st==='contra'){
