@@ -917,7 +917,6 @@ function abrirModalBonificacao(template) {
     '<div class="bn-row2">' + campoHtml('bn_vendedor', 'Vendedor', 'Seu nome') + campoHtml('bn_gestor', 'Gestor', 'Nome do gestor') + '</div>' +
     '<div class="bn-row2">' + campoHtml('bn_sup', 'Supervisor', 'Nome do supervisor') +
       campoHtml('bn_supmail', 'E-mail do supervisor <span class="hint">(vai em cópia)</span>', 'supervisor@gtf.com.br', 'type="email" autocapitalize="none"') + '</div>' +
-    campoHtml('bn_supwpp', 'WhatsApp do supervisor <span class="hint">(opcional, com DDD)</span>', '(43) 99999-9999', 'type="tel"') +
     campoHtml('bn_aut', 'Autorizado por', 'Quem autorizou a bonificação') +
     '<div class="bn-sec">Itens</div><div id="bn_itens"></div>' +
     '<button type="button" class="btn btn-secondary bn-add" id="bn_add">➕ Adicionar item</button>' +
@@ -969,7 +968,7 @@ function abrirModalBonificacao(template) {
     });
     var d = new Date();
     return { razaoSocial: g('bn_razao'), codigo: g('bn_codigo'), vendedor: g('bn_vendedor'), gestor: g('bn_gestor'),
-      supervisorNome: g('bn_sup'), supervisorEmail: g('bn_supmail'), supervisorWpp: g('bn_supwpp'), autorizado: g('bn_aut'),
+      supervisorNome: g('bn_sup'), supervisorEmail: g('bn_supmail'), autorizado: g('bn_aut'),
       motivo: g('bn_motivo'), itens: itens,
       data: ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear() };
   }
@@ -999,13 +998,13 @@ function abrirModalBonificacao(template) {
     if (cc.length) m += '&cc=' + encodeURIComponent(cc.join(','));
     return m;
   }
-  function wppDe(d) {
+  function webMailDe(d, tipo) {
     var r = resumoTexto(d);
-    var fone = d.supervisorWpp.replace(/\D/g, '');
-    if (fone && fone.length <= 11) fone = '55' + fone;
-    var t = '*Bonificação para aprovação*\nCliente: ' + d.razaoSocial + ' (' + d.codigo + ')\nVendedor: ' + d.vendedor + '\nGestor: ' + d.gestor + '\nAutorizado por: ' + d.autorizado +
-      '\nTotal: ' + String(r.cx).replace('.', ',') + ' cx | ' + brl(r.vl) + '\n\nMotivo: ' + d.motivo + '\n\n' + d.supervisorNome + ', pode dar o OK? O PDF com os itens foi enviado por e-mail.';
-    return 'https://wa.me/' + fone + '?text=' + encodeURIComponent(t);
+    var para = template.destinatarios.join(','), cc = template.cc(d).filter(Boolean).join(','), su = template.assunto(d);
+    var corpo = decodeURIComponent(mailtoDe(d).split('&body=')[1].split('&cc=')[0]);
+    if (tipo === 'gmail')
+      return 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(para) + '&cc=' + encodeURIComponent(cc) + '&su=' + encodeURIComponent(su) + '&body=' + encodeURIComponent(corpo);
+    return 'https://outlook.office.com/mail/deeplink/compose?to=' + encodeURIComponent(para) + '&cc=' + encodeURIComponent(cc) + '&subject=' + encodeURIComponent(su) + '&body=' + encodeURIComponent(corpo);
   }
 
   form.onsubmit = function(ev) {
@@ -1030,13 +1029,16 @@ function abrirModalBonificacao(template) {
     try { podeCompartilhar = !!(navigator.canShare && navigator.canShare({ files: [new File([blob], nome, { type: 'application/pdf' })] })); } catch (e) {}
     res.innerHTML = '<div class="bn-result">✅ <b>PDF gerado</b> (' + esc(nome) + ') e baixado.<br>' +
       '📎 O e-mail abre sozinho, mas <b>não anexa o PDF</b>: arraste o arquivo baixado para a mensagem (ou use o botão de compartilhar, no celular).' +
+      '<br>📬 <b>Para:</b> ' + esc(template.destinatarios.join(', ')) + ' &nbsp;|&nbsp; <b>Cópia:</b> ' + esc(d.supervisorEmail) +
       '<div class="btns"><button type="button" class="btn btn-secondary" id="bn_b1">⬇️ Baixar PDF de novo</button>' +
       '<button type="button" class="btn btn-primary" id="bn_b2">✉️ Abrir e-mail</button>' +
-      '<button type="button" class="btn btn-secondary" id="bn_b3">💬 Avisar supervisor no WhatsApp</button>' +
+      '<button type="button" class="btn btn-secondary" id="bn_b5">Abrir no Gmail</button>' +
+      '<button type="button" class="btn btn-secondary" id="bn_b6">Abrir no Outlook</button>' +
       (podeCompartilhar ? '<button type="button" class="btn btn-secondary" id="bn_b4">📎 Compartilhar PDF</button>' : '') + '</div></div>';
     document.getElementById('bn_b1').onclick = function() { baixar(blob, nome); };
     document.getElementById('bn_b2').onclick = function() { window.location.href = mail; };
-    document.getElementById('bn_b3').onclick = function() { window.open(wppDe(d), '_blank'); };
+    document.getElementById('bn_b5').onclick = function() { window.open(webMailDe(d, 'gmail'), '_blank'); };
+    document.getElementById('bn_b6').onclick = function() { window.open(webMailDe(d, 'outlook'), '_blank'); };
     if (podeCompartilhar) document.getElementById('bn_b4').onclick = function() {
       navigator.share({ files: [new File([blob], nome, { type: 'application/pdf' })], title: template.assunto(d), text: 'Solicitação de bonificação - ' + d.razaoSocial }).catch(function() {});
     };
