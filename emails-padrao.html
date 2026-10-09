@@ -271,6 +271,24 @@
   }
   .field input:focus, .field textarea:focus { border-color: var(--brand-glow); }
   .field textarea { min-height: 70px; }
+
+  /* ---- Bonificação ---- */
+  .bn-sec { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted,#888); margin:16px 0 8px; }
+  .bn-row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:520px){ .bn-row2{ grid-template-columns:1fr; } }
+  .bn-item { border:1px solid var(--line-soft); border-radius:12px; padding:10px; margin-bottom:8px; position:relative; }
+  .bn-item-hdr { display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:700; margin-bottom:6px; }
+  .bn-item-hdr button { background:none; border:0; color:#d33; font-size:13px; cursor:pointer; }
+  .bn-item-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .bn-item-grid .full { grid-column:1 / -1; }
+  .bn-item input { width:100%; box-sizing:border-box; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; font-size:16px; outline:none; -webkit-appearance:none; }
+  .bn-item input:focus { border-color:var(--brand-glow); }
+  .bn-add { width:100%; margin:2px 0 10px; }
+  .bn-total { display:flex; justify-content:space-between; font-weight:700; padding:12px; border-radius:12px; background:var(--line-soft); font-size:15px; }
+  .bn-total small { font-weight:500; opacity:.75; display:block; font-size:11px; }
+  .bn-result { margin-top:14px; padding:12px; border-radius:12px; border:1px solid var(--line-soft); font-size:13px; line-height:1.5; }
+  .bn-result .btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .bn-result .btn { flex:1 1 45%; }
   .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
   .btn {
     flex: 1; padding: 12px; border-radius: 12px; border: 0;
@@ -398,30 +416,14 @@ var TEMPLATES = [
     id: 'solicitacao-bonificacao',
     icon: '🎁',
     titulo: 'Solicitação de Bonificação',
-    descricao: 'Solicitar bonificação para um cliente (anexar o arquivo do cliente).',
-    destinatarios: [
-      'comercial.varejo@gtf.com.br'
-    ],
-    avisos: [
-      '📎 Anexe o arquivo do cliente antes de enviar - o e-mail não anexa sozinho.'
-    ],
-    fields: [
-      { key: 'razaoSocial', label: 'Razão Social', type: 'text', placeholder: 'Ex: Comercial Varejo Apucarana LTDA', required: true },
-      { key: 'codigo', label: 'Código', type: 'text', placeholder: 'Código do cliente', required: true },
-      { key: 'supervisorNome', label: 'Nome do supervisor', type: 'text', placeholder: 'Ex: Maria Silva', required: true },
-      { key: 'supervisorEmail', label: 'E-mail do supervisor', hint: '(sempre vai em cópia)', type: 'email', placeholder: 'supervisor@gtf.com.br', required: true }
-    ],
-    cc: function(v) {
-      return [v.supervisorEmail];
-    },
-    assunto: function(v) {
-      return 'Solicitação de Bonificação - ' + v.razaoSocial + ' - ' + v.codigo;
-    },
-    corpo: function(v) {
-      return saudacao() + '\n\n' +
-        'Solicito bonificação para o cliente em anexo.\n\n' +
-        'Supervisor ' + v.supervisorNome + ' poderia dar o OK no e-mail por favor.';
-    }
+    descricao: 'Preencha os itens e o motivo: o PDF é gerado e o e-mail abre pronto para enviar.',
+    destinatarios: ['comercial.varejo@gtf.com.br'],
+    custom: 'bonificacao',
+    avisos: [],
+    fields: [],
+    cc: function(v) { return [v.supervisorEmail]; },
+    assunto: function(v) { return 'Solicitação de Bonificação - ' + v.razaoSocial + ' - ' + v.codigo; },
+    corpo: function(v) { return ''; }
   },
   {
     id: 'cadastro-forma-pagamento',
@@ -679,6 +681,11 @@ function abrirModal(template) {
 
   var form = document.getElementById('modalForm');
   form.innerHTML = '';
+  if (template.custom === 'bonificacao') {
+    abrirModalBonificacao(template);
+    document.getElementById('modalOverlay').classList.add('show');
+    return;
+  }
   template.fields.forEach(function(f) {
     var wrap = document.createElement('div');
     wrap.className = 'field';
@@ -747,6 +754,284 @@ function abrirModal(template) {
   };
 
   document.getElementById('modalOverlay').classList.add('show');
+}
+
+
+/* ================= Bonificação: formulário, total, PDF, e-mail e WhatsApp ================= */
+function brl(n) { return 'R$ ' + (Number(n) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function numBR(txt) {
+  var t = String(txt || '').trim().replace(/[R$\s]/g, '');
+  if (!t) return 0;
+  if (t.indexOf(',') > -1) t = t.replace(/\./g, '').replace(',', '.');
+  var n = parseFloat(t);
+  return isNaN(n) ? 0 : n;
+}
+function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* ---- Gerador de PDF mínimo (sem biblioteca, funciona offline) ---- */
+var HW = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+function baseChar(c) {
+  var n = c.normalize ? c.normalize('NFD').replace(/[̀-ͯ]/g, '') : c;
+  return n.charAt(0) || c;
+}
+function larg(txt, size, bold) {
+  var w = 0;
+  for (var i = 0; i < txt.length; i++) {
+    var code = baseChar(txt.charAt(i)).charCodeAt(0);
+    w += (code >= 32 && code <= 126) ? HW[code - 32] : 556;
+  }
+  return w * size / 1000 * (bold ? 1.07 : 1);
+}
+function quebrar(txt, maxW, size) {
+  var saida = [];
+  String(txt).split(/\r?\n/).forEach(function(par) {
+    var palavras = par.split(/\s+/), linha = '';
+    palavras.forEach(function(p) {
+      while (larg(p, size) > maxW) { // palavra gigante
+        var k = p.length;
+        while (k > 1 && larg(p.slice(0, k), size) > maxW) k--;
+        if (linha) { saida.push(linha); linha = ''; }
+        saida.push(p.slice(0, k)); p = p.slice(k);
+      }
+      var teste = linha ? linha + ' ' + p : p;
+      if (larg(teste, size) <= maxW) linha = teste; else { if (linha) saida.push(linha); linha = p; }
+    });
+    saida.push(linha);
+  });
+  return saida;
+}
+function pdfStr(t) { // WinAnsi: Latin-1 cobre acentos do português
+  var o = '';
+  for (var i = 0; i < t.length; i++) {
+    var c = t.charCodeAt(i);
+    if (c > 255) c = 63;
+    if (c === 40 || c === 41 || c === 92) o += '\\' + String.fromCharCode(c);
+    else o += String.fromCharCode(c);
+  }
+  return o;
+}
+function gerarPdfBonificacao(d) {
+  var W = 595, H = 842, M = 40, paginas = [], ops, y;
+  function nova() { ops = []; paginas.push(ops); y = H - M; }
+  function txt(x, yy, t, size, bold, cor) {
+    ops.push((cor || '0 g') + ' BT /' + (bold ? 'F2' : 'F1') + ' ' + size + ' Tf ' + x.toFixed(1) + ' ' + yy.toFixed(1) + ' Td (' + pdfStr(t) + ') Tj ET');
+  }
+  function txtDir(xdir, yy, t, size, bold) { txt(xdir - larg(t, size, bold), yy, t, size, bold); }
+  function linha(x1, yy, x2, cor) { ops.push((cor || '0.7 G') + ' 0.6 w ' + x1 + ' ' + yy.toFixed(1) + ' m ' + x2 + ' ' + yy.toFixed(1) + ' l S'); }
+  function garantir(h) { if (y - h < M + 20) nova(); }
+  function campo(rot, val) {
+    var ls = quebrar(val || '-', W - 2 * M - 110, 10);
+    garantir(ls.length * 13 + 4);
+    txt(M, y, rot, 10, true);
+    ls.forEach(function(l, i) { txt(M + 110, y - i * 13, l, 10, false); });
+    y -= ls.length * 13 + 4;
+  }
+  nova();
+  ops.push('0.11 0.45 0.25 rg ' + M + ' ' + (y - 34) + ' ' + (W - 2 * M) + ' 40 re f');
+  txt(M + 12, y - 20, 'SOLICITAÇÃO DE BONIFICAÇÃO', 16, true, '1 g');
+  txtDir(W - M - 12, y - 20, d.data, 10, false);
+  ops[ops.length - 1] = ops[ops.length - 1].replace('0 g', '1 g');
+  y -= 58;
+  txt(M, y, 'DADOS DO PEDIDO', 10, true, '0.11 0.45 0.25 rg'); y -= 6; linha(M, y, W - M); y -= 16;
+  campo('Cliente:', d.razaoSocial + (d.codigo ? '  (cód. ' + d.codigo + ')' : ''));
+  campo('Vendedor:', d.vendedor);
+  campo('Supervisor:', d.supervisorNome);
+  campo('Gestor:', d.gestor);
+  campo('Autorizado por:', d.autorizado);
+  y -= 8;
+  txt(M, y, 'ITENS', 10, true, '0.11 0.45 0.25 rg'); y -= 6; linha(M, y, W - M); y -= 14;
+  var cx = { n: M, cod: M + 28, nome: M + 128, qtd: W - M - 80, val: W - M };
+  function cab() {
+    txt(cx.n, y, '#', 9, true); txt(cx.cod, y, 'CÓDIGO', 9, true); txt(cx.nome, y, 'PRODUTO', 9, true);
+    txtDir(cx.qtd, y, 'CAIXAS', 9, true); txtDir(cx.val, y, 'VALOR', 9, true);
+    y -= 5; linha(M, y, W - M, '0.3 G'); y -= 13;
+  }
+  cab();
+  var totCx = 0, totVl = 0;
+  d.itens.forEach(function(it, i) {
+    var nomeW = cx.qtd - 60 - cx.nome;
+    var nl = quebrar(it.nome || '-', nomeW, 9.5);
+    if (y - nl.length * 12 < M + 60) { nova(); cab(); }
+    txt(cx.n, y, String(i + 1), 9.5, false);
+    txt(cx.cod, y, it.codigo || '-', 8.5, false);
+    nl.forEach(function(l, k) { txt(cx.nome, y - k * 12, l, 9.5, false); });
+    txtDir(cx.qtd, y, String(it.qtd).replace('.', ','), 9.5, false);
+    txtDir(cx.val, y, brl(it.valor), 9.5, false);
+    y -= nl.length * 12 + 3; linha(M, y + 7, W - M, '0.88 G'); y -= 4;
+    totCx += it.qtd; totVl += it.valor;
+  });
+  garantir(40);
+  y -= 4; linha(M, y + 8, W - M, '0.3 G');
+  txt(cx.nome, y - 6, 'TOTAL', 11, true);
+  txtDir(cx.qtd, y - 6, String(totCx).replace('.', ',') + ' cx', 11, true);
+  txtDir(cx.val, y - 6, brl(totVl), 11, true);
+  y -= 34;
+  garantir(40);
+  txt(M, y, 'MOTIVO DA BONIFICAÇÃO', 10, true, '0.11 0.45 0.25 rg'); y -= 6; linha(M, y, W - M); y -= 15;
+  quebrar(d.motivo, W - 2 * M, 10).forEach(function(l) { garantir(14); txt(M, y, l, 10, false); y -= 13; });
+  y -= 18; garantir(70);
+  txt(M, y, 'APROVAÇÃO DO SUPERVISOR', 10, true, '0.11 0.45 0.25 rg'); y -= 6; linha(M, y, W - M); y -= 34;
+  linha(M, y, M + 230, '0 G'); linha(M + 270, y, M + 360, '0 G');
+  txt(M, y - 12, 'Supervisor: ' + (d.supervisorNome || ''), 9, false); txt(M + 270, y - 12, 'Data', 9, false);
+
+  // monta o arquivo
+  var objs = [];
+  function add(c) { objs.push(c); return objs.length; }
+  add('<< /Type /Catalog /Pages 2 0 R >>');
+  add('PLACEHOLDER'); // 2: Pages
+  var f1 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  var f2 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  var kids = [];
+  paginas.forEach(function(o, idx) {
+    o.push('0.5 g BT /F1 8 Tf ' + M + ' 24 Td (' + pdfStr('Gerado pelo painel Estoque Apucarana - pág. ' + (idx + 1) + '/' + paginas.length) + ') Tj ET');
+    var cont = o.join('\n');
+    var c = add('<< /Length ' + cont.length + ' >>\nstream\n' + cont + '\nendstream');
+    var pg = add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 ' + f1 + ' 0 R /F2 ' + f2 + ' 0 R >> >> /Contents ' + c + ' 0 R >>');
+    kids.push(pg + ' 0 R');
+  });
+  objs[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + kids.length + ' >>';
+  var out = '%PDF-1.4\n', offs = [];
+  objs.forEach(function(c, i) { offs.push(out.length); out += (i + 1) + ' 0 obj\n' + c + '\nendobj\n'; });
+  var xref = out.length;
+  out += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n';
+  offs.forEach(function(o) { out += ('0000000000' + o).slice(-10) + ' 00000 n \n'; });
+  out += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF';
+  var bytes = new Uint8Array(out.length);
+  for (var i = 0; i < out.length; i++) bytes[i] = out.charCodeAt(i) & 255;
+  return new Blob([bytes], { type: 'application/pdf' });
+}
+
+function abrirModalBonificacao(template) {
+  var form = document.getElementById('modalForm');
+  function campoHtml(id, label, ph, extra) {
+    return '<div class="field"><label>' + label + '</label><input id="' + id + '" placeholder="' + ph + '" ' + (extra || '') + '></div>';
+  }
+  form.innerHTML =
+    '<div class="bn-sec">Cliente</div>' +
+    '<div class="bn-row2">' + campoHtml('bn_razao', 'Razão Social', 'Nome do cliente') + campoHtml('bn_codigo', 'Código do cliente', 'Ex: 012345') + '</div>' +
+    '<div class="bn-sec">Quem está envolvido</div>' +
+    '<div class="bn-row2">' + campoHtml('bn_vendedor', 'Vendedor', 'Seu nome') + campoHtml('bn_gestor', 'Gestor', 'Nome do gestor') + '</div>' +
+    '<div class="bn-row2">' + campoHtml('bn_sup', 'Supervisor', 'Nome do supervisor') +
+      campoHtml('bn_supmail', 'E-mail do supervisor <span class="hint">(vai em cópia)</span>', 'supervisor@gtf.com.br', 'type="email" autocapitalize="none"') + '</div>' +
+    campoHtml('bn_supwpp', 'WhatsApp do supervisor <span class="hint">(opcional, com DDD)</span>', '(43) 99999-9999', 'type="tel"') +
+    campoHtml('bn_aut', 'Autorizado por', 'Quem autorizou a bonificação') +
+    '<div class="bn-sec">Itens</div><div id="bn_itens"></div>' +
+    '<button type="button" class="btn btn-secondary bn-add" id="bn_add">➕ Adicionar item</button>' +
+    '<div class="bn-total"><div>TOTAL<small id="bn_totcx">0 caixas</small></div><div id="bn_totval">R$ 0,00</div></div>' +
+    '<div class="bn-sec">Motivo</div>' +
+    '<div class="field"><label>Motivo da bonificação <span class="hint">(quanto mais detalhes, melhor)</span></label>' +
+    '<textarea id="bn_motivo" style="min-height:110px" placeholder="Conte o que aconteceu: cliente, situação, histórico de compras, negociação, por que a bonificação é necessária, prazo…"></textarea></div>' +
+    '<div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>' +
+    '<button type="submit" class="btn btn-primary">📄 Gerar PDF e e-mail</button></div>' +
+    '<div id="bn_result"></div>';
+
+  var itensEl = document.getElementById('bn_itens');
+  function recalc() {
+    var cx = 0, vl = 0;
+    itensEl.querySelectorAll('.bn-item').forEach(function(r, i) {
+      r.querySelector('.n').textContent = i + 1;
+      cx += numBR(r.querySelector('.q').value); vl += numBR(r.querySelector('.v').value);
+    });
+    document.getElementById('bn_totcx').textContent = String(cx).replace('.', ',') + (cx === 1 ? ' caixa' : ' caixas');
+    document.getElementById('bn_totval').textContent = brl(vl);
+  }
+  function addItem() {
+    var r = document.createElement('div');
+    r.className = 'bn-item';
+    r.innerHTML = '<div class="bn-item-hdr"><span>Item <span class="n"></span></span><button type="button" class="rm">✕ remover</button></div>' +
+      '<div class="bn-item-grid"><input class="c" placeholder="Código do produto"><input class="q" inputmode="decimal" placeholder="Qtd. em caixas">' +
+      '<input class="nm full" placeholder="Nome do produto"><input class="v full" inputmode="decimal" placeholder="Valor (R$) deste item"></div>';
+    r.querySelector('.rm').onclick = function() { if (itensEl.children.length > 1) { r.remove(); recalc(); } };
+    r.querySelectorAll('input').forEach(function(i) { i.addEventListener('input', recalc); });
+    itensEl.appendChild(r); recalc();
+    return r;
+  }
+  document.getElementById('bn_add').onclick = function() { addItem().querySelector('.c').focus(); };
+  addItem();
+
+  function coletar() {
+    var g = function(id) { return document.getElementById(id).value.trim(); };
+    var itens = [];
+    itensEl.querySelectorAll('.bn-item').forEach(function(r) {
+      var it = { codigo: r.querySelector('.c').value.trim(), nome: r.querySelector('.nm').value.trim(), qtd: numBR(r.querySelector('.q').value), valor: numBR(r.querySelector('.v').value) };
+      if (it.codigo || it.nome || it.qtd || it.valor) itens.push(it);
+    });
+    var d = new Date();
+    return { razaoSocial: g('bn_razao'), codigo: g('bn_codigo'), vendedor: g('bn_vendedor'), gestor: g('bn_gestor'),
+      supervisorNome: g('bn_sup'), supervisorEmail: g('bn_supmail'), supervisorWpp: g('bn_supwpp'), autorizado: g('bn_aut'),
+      motivo: g('bn_motivo'), itens: itens,
+      data: ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear() };
+  }
+  function resumoTexto(d) {
+    var cx = 0, vl = 0;
+    var linhas = d.itens.map(function(it, i) { cx += it.qtd; vl += it.valor;
+      return (i + 1) + ') ' + (it.codigo || '-') + ' - ' + (it.nome || '-') + ' | ' + String(it.qtd).replace('.', ',') + ' cx | ' + brl(it.valor); });
+    return { linhas: linhas.join('\n'), cx: cx, vl: vl };
+  }
+  function nomeArquivo(d) {
+    return ('Bonificacao_' + (d.razaoSocial || 'cliente') + '_' + (d.codigo || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9_-]+/g, '_').replace(/_+$/,'') + '.pdf';
+  }
+  function baixar(blob, nome) {
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click();
+    setTimeout(function() { a.remove(); URL.revokeObjectURL(url); }, 4000);
+  }
+  function mailtoDe(d) {
+    var r = resumoTexto(d);
+    var corpo = saudacao() + '\n\nSolicito bonificação para o cliente ' + d.razaoSocial + ' (cód. ' + d.codigo + ').\n\n' +
+      'Vendedor: ' + d.vendedor + '\nSupervisor: ' + d.supervisorNome + '\nGestor: ' + d.gestor + '\nAutorizado por: ' + d.autorizado + '\n\n' +
+      'Itens:\n' + r.linhas + '\n\nTOTAL: ' + String(r.cx).replace('.', ',') + ' caixas | ' + brl(r.vl) + '\n\n' +
+      'Motivo:\n' + d.motivo + '\n\n📎 PDF da solicitação em anexo.\n\n' +
+      'Supervisor ' + d.supervisorNome + ', poderia dar o OK respondendo este e-mail, por favor.';
+    var m = 'mailto:' + template.destinatarios.join(',') + '?subject=' + encodeURIComponent(template.assunto(d)) + '&body=' + encodeURIComponent(corpo);
+    var cc = template.cc(d).filter(Boolean);
+    if (cc.length) m += '&cc=' + encodeURIComponent(cc.join(','));
+    return m;
+  }
+  function wppDe(d) {
+    var r = resumoTexto(d);
+    var fone = d.supervisorWpp.replace(/\D/g, '');
+    if (fone && fone.length <= 11) fone = '55' + fone;
+    var t = '*Bonificação para aprovação*\nCliente: ' + d.razaoSocial + ' (' + d.codigo + ')\nVendedor: ' + d.vendedor + '\nGestor: ' + d.gestor + '\nAutorizado por: ' + d.autorizado +
+      '\nTotal: ' + String(r.cx).replace('.', ',') + ' cx | ' + brl(r.vl) + '\n\nMotivo: ' + d.motivo + '\n\n' + d.supervisorNome + ', pode dar o OK? O PDF com os itens foi enviado por e-mail.';
+    return 'https://wa.me/' + fone + '?text=' + encodeURIComponent(t);
+  }
+
+  form.onsubmit = function(ev) {
+    ev.preventDefault();
+    var d = coletar(), falta = [];
+    if (!d.razaoSocial) falta.push('Razão Social');
+    if (!d.codigo) falta.push('Código do cliente');
+    if (!d.vendedor) falta.push('Vendedor');
+    if (!d.supervisorNome) falta.push('Supervisor');
+    if (!d.supervisorEmail) falta.push('E-mail do supervisor');
+    if (!d.gestor) falta.push('Gestor');
+    if (!d.autorizado) falta.push('Autorizado por');
+    if (!d.itens.length) falta.push('pelo menos 1 item');
+    else if (d.itens.some(function(it) { return !it.nome || !(it.qtd > 0); })) falta.push('nome e quantidade de cada item');
+    if (!d.motivo) falta.push('Motivo da bonificação');
+    if (falta.length) { window.alert('Preencha antes de gerar: ' + falta.join(', ')); return; }
+
+    var blob = gerarPdfBonificacao(d), nome = nomeArquivo(d), mail = mailtoDe(d);
+    baixar(blob, nome);
+    var res = document.getElementById('bn_result');
+    var podeCompartilhar = false;
+    try { podeCompartilhar = !!(navigator.canShare && navigator.canShare({ files: [new File([blob], nome, { type: 'application/pdf' })] })); } catch (e) {}
+    res.innerHTML = '<div class="bn-result">✅ <b>PDF gerado</b> (' + esc(nome) + ') e baixado.<br>' +
+      '📎 O e-mail abre sozinho, mas <b>não anexa o PDF</b>: arraste o arquivo baixado para a mensagem (ou use o botão de compartilhar, no celular).' +
+      '<div class="btns"><button type="button" class="btn btn-secondary" id="bn_b1">⬇️ Baixar PDF de novo</button>' +
+      '<button type="button" class="btn btn-primary" id="bn_b2">✉️ Abrir e-mail</button>' +
+      '<button type="button" class="btn btn-secondary" id="bn_b3">💬 Avisar supervisor no WhatsApp</button>' +
+      (podeCompartilhar ? '<button type="button" class="btn btn-secondary" id="bn_b4">📎 Compartilhar PDF</button>' : '') + '</div></div>';
+    document.getElementById('bn_b1').onclick = function() { baixar(blob, nome); };
+    document.getElementById('bn_b2').onclick = function() { window.location.href = mail; };
+    document.getElementById('bn_b3').onclick = function() { window.open(wppDe(d), '_blank'); };
+    if (podeCompartilhar) document.getElementById('bn_b4').onclick = function() {
+      navigator.share({ files: [new File([blob], nome, { type: 'application/pdf' })], title: template.assunto(d), text: 'Solicitação de bonificação - ' + d.razaoSocial }).catch(function() {});
+    };
+    res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(function() { window.location.href = mail; }, 900);
+  };
 }
 
 function fecharModal() {
