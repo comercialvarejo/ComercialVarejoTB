@@ -281,6 +281,7 @@
   .bn-item-hdr button { background:none; border:0; color:#d33; font-size:13px; cursor:pointer; }
   .bn-item-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .bn-item-grid .full { grid-column:1 / -1; }
+  .bn-linha { font-size:12.5px; opacity:.85; }
   .bn-item input { width:100%; box-sizing:border-box; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; font-size:16px; outline:none; -webkit-appearance:none; }
   .bn-item input:focus { border-color:var(--brand-glow); }
   .bn-add { width:100%; margin:2px 0 10px; }
@@ -840,30 +841,33 @@ function gerarPdfBonificacao(d) {
   campo('Autorizado por:', d.autorizado);
   y -= 8;
   txt(M, y, 'ITENS', 10, true, '0.11 0.45 0.25 rg'); y -= 6; linha(M, y, W - M); y -= 14;
-  var cx = { n: M, cod: M + 28, nome: M + 128, qtd: W - M - 80, val: W - M };
+  var cx = { n: M, cod: M + 28, nome: M + 128, qtd: W - M - 215, kg: W - M - 150, pk: W - M - 85, val: W - M };
   function cab() {
     txt(cx.n, y, '#', 9, true); txt(cx.cod, y, 'CÓDIGO', 9, true); txt(cx.nome, y, 'PRODUTO', 9, true);
-    txtDir(cx.qtd, y, 'CAIXAS', 9, true); txtDir(cx.val, y, 'VALOR', 9, true);
+    txtDir(cx.qtd, y, 'CAIXAS', 9, true); txtDir(cx.kg, y, 'KG TOTAL', 9, true); txtDir(cx.pk, y, 'R$/KG', 9, true); txtDir(cx.val, y, 'VALOR', 9, true);
     y -= 5; linha(M, y, W - M, '0.3 G'); y -= 13;
   }
   cab();
-  var totCx = 0, totVl = 0;
+  var totCx = 0, totVl = 0, totKg = 0;
   d.itens.forEach(function(it, i) {
-    var nomeW = cx.qtd - 60 - cx.nome;
+    var nomeW = cx.qtd - 45 - cx.nome;
     var nl = quebrar(it.nome || '-', nomeW, 9.5);
     if (y - nl.length * 12 < M + 60) { nova(); cab(); }
     txt(cx.n, y, String(i + 1), 9.5, false);
     txt(cx.cod, y, it.codigo || '-', 8.5, false);
     nl.forEach(function(l, k) { txt(cx.nome, y - k * 12, l, 9.5, false); });
     txtDir(cx.qtd, y, String(it.qtd).replace('.', ','), 9.5, false);
+    txtDir(cx.kg, y, String(it.pesoTotal).replace('.', ','), 9.5, false);
+    txtDir(cx.pk, y, brl(it.preco), 9.5, false);
     txtDir(cx.val, y, brl(it.valor), 9.5, false);
     y -= nl.length * 12 + 3; linha(M, y + 7, W - M, '0.88 G'); y -= 4;
-    totCx += it.qtd; totVl += it.valor;
+    totCx += it.qtd; totVl += it.valor; totKg += it.pesoTotal;
   });
   garantir(40);
   y -= 4; linha(M, y + 8, W - M, '0.3 G');
   txt(cx.nome, y - 6, 'TOTAL', 11, true);
-  txtDir(cx.qtd, y - 6, String(totCx).replace('.', ',') + ' cx', 11, true);
+  txtDir(cx.qtd, y - 6, String(totCx).replace('.', ',') + ' cx', 10, true);
+  txtDir(cx.kg, y - 6, (Math.round(totKg * 100) / 100).toString().replace('.', ',') + ' kg', 10, true);
   txtDir(cx.val, y - 6, brl(totVl), 11, true);
   y -= 34;
   garantir(40);
@@ -930,7 +934,11 @@ function abrirModalBonificacao(template) {
     var cx = 0, vl = 0;
     itensEl.querySelectorAll('.bn-item').forEach(function(r, i) {
       r.querySelector('.n').textContent = i + 1;
-      cx += numBR(r.querySelector('.q').value); vl += numBR(r.querySelector('.v').value);
+      var q = numBR(r.querySelector('.q').value), kg = numBR(r.querySelector('.kg').value), pk = numBR(r.querySelector('.pk').value);
+      var lt = q * kg * pk;
+      r.querySelector('.lt').textContent = brl(lt);
+      r.querySelector('.lk').textContent = (q && kg) ? '(' + (Math.round(q * kg * 100) / 100).toString().replace('.', ',') + ' kg)' : '';
+      cx += q; vl += lt;
     });
     document.getElementById('bn_totcx').textContent = String(cx).replace('.', ',') + (cx === 1 ? ' caixa' : ' caixas');
     document.getElementById('bn_totval').textContent = brl(vl);
@@ -940,7 +948,8 @@ function abrirModalBonificacao(template) {
     r.className = 'bn-item';
     r.innerHTML = '<div class="bn-item-hdr"><span>Item <span class="n"></span></span><button type="button" class="rm">✕ remover</button></div>' +
       '<div class="bn-item-grid"><input class="c" placeholder="Código do produto"><input class="q" inputmode="decimal" placeholder="Qtd. em caixas">' +
-      '<input class="nm full" placeholder="Nome do produto"><input class="v full" inputmode="decimal" placeholder="Valor (R$) deste item"></div>';
+      '<input class="nm full" placeholder="Nome do produto"><input class="kg" inputmode="decimal" placeholder="Peso da caixa (kg)"><input class="pk" inputmode="decimal" placeholder="Preço por kg (R$)">' +
+      '<div class="full bn-linha">Total do item: <b class="lt">R$ 0,00</b> <span class="lk"></span></div></div>';
     r.querySelector('.rm').onclick = function() { if (itensEl.children.length > 1) { r.remove(); recalc(); } };
     r.querySelectorAll('input').forEach(function(i) { i.addEventListener('input', recalc); });
     itensEl.appendChild(r); recalc();
@@ -953,8 +962,10 @@ function abrirModalBonificacao(template) {
     var g = function(id) { return document.getElementById(id).value.trim(); };
     var itens = [];
     itensEl.querySelectorAll('.bn-item').forEach(function(r) {
-      var it = { codigo: r.querySelector('.c').value.trim(), nome: r.querySelector('.nm').value.trim(), qtd: numBR(r.querySelector('.q').value), valor: numBR(r.querySelector('.v').value) };
-      if (it.codigo || it.nome || it.qtd || it.valor) itens.push(it);
+      var it = { codigo: r.querySelector('.c').value.trim(), nome: r.querySelector('.nm').value.trim(), qtd: numBR(r.querySelector('.q').value), kg: numBR(r.querySelector('.kg').value), preco: numBR(r.querySelector('.pk').value) };
+      it.pesoTotal = Math.round(it.qtd * it.kg * 100) / 100;
+      it.valor = Math.round(it.pesoTotal * it.preco * 100) / 100;
+      if (it.codigo || it.nome || it.qtd || it.kg || it.preco) itens.push(it);
     });
     var d = new Date();
     return { razaoSocial: g('bn_razao'), codigo: g('bn_codigo'), vendedor: g('bn_vendedor'), gestor: g('bn_gestor'),
@@ -965,7 +976,7 @@ function abrirModalBonificacao(template) {
   function resumoTexto(d) {
     var cx = 0, vl = 0;
     var linhas = d.itens.map(function(it, i) { cx += it.qtd; vl += it.valor;
-      return (i + 1) + ') ' + (it.codigo || '-') + ' - ' + (it.nome || '-') + ' | ' + String(it.qtd).replace('.', ',') + ' cx | ' + brl(it.valor); });
+      return (i + 1) + ') ' + (it.codigo || '-') + ' - ' + (it.nome || '-') + ' | ' + String(it.qtd).replace('.', ',') + ' cx x ' + String(it.kg).replace('.', ',') + ' kg = ' + String(it.pesoTotal).replace('.', ',') + ' kg | ' + brl(it.preco) + '/kg | ' + brl(it.valor); });
     return { linhas: linhas.join('\n'), cx: cx, vl: vl };
   }
   function nomeArquivo(d) {
@@ -1008,7 +1019,7 @@ function abrirModalBonificacao(template) {
     if (!d.gestor) falta.push('Gestor');
     if (!d.autorizado) falta.push('Autorizado por');
     if (!d.itens.length) falta.push('pelo menos 1 item');
-    else if (d.itens.some(function(it) { return !it.nome || !(it.qtd > 0); })) falta.push('nome e quantidade de cada item');
+    else if (d.itens.some(function(it) { return !it.nome || !(it.qtd > 0) || !(it.kg > 0) || !(it.preco > 0); })) falta.push('nome, caixas, peso da caixa e preço por kg de cada item');
     if (!d.motivo) falta.push('Motivo da bonificação');
     if (falta.length) { window.alert('Preencha antes de gerar: ' + falta.join(', ')); return; }
 
