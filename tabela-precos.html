@@ -1336,20 +1336,29 @@ function qcUpdate() {
 // ── ENVIO PELO WHATSAPP: só R$/kg e 1 CX ──
 // Regra de negócio: para o cliente seguem apenas o preço por kg e o preço de
 // 1 caixa. Faixas de volume (10 CX+, 20 CX+), R$/Bdj e R$/UN ficam de fora.
-function waPermitido(label) {
+function waTipo(label) {
   var l = String(label || '').replace(/\s+/g, ' ').trim().toUpperCase();
-  return l === 'R$/KG' || l === '1 CX';
+  if (l === 'R$/KG' || l === '1 CX') return 'kg';
+  if (l === 'R$/BDJ') return 'bdj';
+  if (l === 'R$/UN') return 'un';
+  return null; // 10 CX+, 20 CX+ e qualquer outra faixa não saem
 }
+function waPermitido(label) { return waTipo(label) !== null; }
 function waPrecosDoCard(card) {
   var body = card.parentElement;
   var hdr = body ? body.querySelector('.col-hdr, .col-hdr-2, .col-hdr-1') : null;
   var labels = hdr ? Array.from(hdr.querySelectorAll('span')).slice(1).map(function(s){ return s.textContent.trim(); }) : [];
   var out = [];
   Array.from(card.querySelectorAll('.p')).forEach(function(el, i) {
-    var t = el.textContent.trim();
-    if (waPermitido(labels[i]) && qcParseBRL(t) !== null) out.push(t);
+    var t = el.textContent.trim(), k = waTipo(labels[i]);
+    if (k && qcParseBRL(t) !== null) out.push({ tipo: k, texto: t });
   });
+  out.sort(function(a, b) { return (a.tipo === 'kg' ? 0 : 1) - (b.tipo === 'kg' ? 0 : 1); });
   return out;
+}
+function waFmt(precos) {
+  var un = { kg: '/kg', bdj: '/bdj', un: '/un' };
+  return precos.map(function(x) { return 'R$ ' + x.texto + un[x.tipo]; });
 }
 var waItens = [];
 function openWaShare() {
@@ -1364,7 +1373,7 @@ function openWaShare() {
       var nome = card.querySelector('.name');
       var precos = waPrecosDoCard(card);
       if (!nome || !precos.length) return;
-      var it = { nome: nome.textContent.trim(), preco: precos[0], ativo: true };
+      var it = { nome: nome.textContent.trim(), precos: precos, ativo: true };
       waItens.push(it); lista.push(it);
     });
     if (lista.length) grupos.push({ titulo: titulo, itens: lista });
@@ -1374,7 +1383,7 @@ function openWaShare() {
     html += '<div class="wa-grp">' + g.titulo + '</div>';
     g.itens.forEach(function(it) {
       var idx = waItens.indexOf(it);
-      html += '<label class="wa-item"><input type="checkbox" checked data-i="' + idx + '" onchange="waAtualiza()"><span class="wa-n">' + it.nome + '</span><span class="wa-p">R$ ' + it.preco + '/kg</span></label>';
+      html += '<label class="wa-item"><input type="checkbox" checked data-i="' + idx + '" onchange="waAtualiza()"><span class="wa-n">' + it.nome + '</span><span class="wa-p">' + waFmt(it.precos).join(' · ') + '</span></label>';
     });
   });
   if (!html) html = '<div class="wa-item">Nenhum produto na tela. Limpe a busca ou escolha outra categoria.</div>';
@@ -1416,7 +1425,7 @@ function waMontaMensagem() {
     var it = waItens[parseInt(c.dataset.i, 10)];
     if (!it) return;
     if (!aberto) { linhas.push(''); linhas.push('*' + atual.toLocaleUpperCase('pt-BR') + '*'); linhas.push(''); aberto = true; }
-    linhas.push('• ' + waLimpa(it.nome) + ' — R$ ' + it.preco + '/kg');
+    linhas.push('• ' + waLimpa(it.nome) + ' — ' + waFmt(it.precos).join(' | '));
     qtd++;
   });
   return qtd ? linhas.join('\n') : '';
@@ -1461,7 +1470,7 @@ function qcShareWhatsapp() {
   if (qcState.sectionTitle) lines.push('_' + qcState.sectionTitle + '_');
   qcState.rows.forEach(function(r) {
     // só R$/kg e 1 CX seguem para o cliente (ver waPermitido)
-    if (r.text && waPermitido(r.label)) lines.push('Preço: R$ ' + r.text + '/kg');
+    if (r.text && waPermitido(r.label)) lines.push(({ kg: 'Preço por kg', bdj: 'Preço por bandeja', un: 'Preço por unidade' })[waTipo(r.label)] + ': R$ ' + r.text);
   });
   if (qty > 1) {
     lines.push('');
@@ -1742,7 +1751,7 @@ document.addEventListener('click', function(e) {
     <div class="qc-handle"></div>
     <div class="qc-title">Enviar preços no WhatsApp</div>
     <div class="qc-sub" id="waSub">Produtos que estão na tela</div>
-    <div class="wa-note">A mensagem leva somente o <b>preço por kg (R$/kg)</b> e o <b>preço de 1 caixa</b>. Faixas por volume (10 CX+, 20 CX+) e preço por bandeja/unidade não são enviados.</div>
+    <div class="wa-note">A mensagem leva o <b>preço por kg (R$/kg)</b>, o <b>preço de 1 caixa</b> e, quando houver, o preço da <b>bandeja</b> ou da <b>unidade</b>. Faixas por volume (10 CX+, 20 CX+) não são enviadas.</div>
     <div class="wa-tools"><span id="waCount">0 selecionados</span><button type="button" onclick="waToggleAll()">Marcar / desmarcar todos</button></div>
     <div class="wa-list" id="waList"></div>
     <div class="qc-actions">
