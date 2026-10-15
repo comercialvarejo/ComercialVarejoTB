@@ -1401,24 +1401,48 @@ function waToggleAll() {
   boxes.forEach(function(c){ c.checked = !todos; });
   waAtualiza();
 }
-function waSend() {
-  var vistos = {}, linhas = ['*Tabela de Preços — Canção Alimentos*'];
+// Tira emojis e símbolos (o WhatsApp Desktop troca por "�" e pode embaralhar a mensagem)
+function waLimpa(t) {
+  return String(t || '').replace(/[\u{1F000}-\u{1FFFF}\u{2190}-\u{2BFF}️‍]/gu, '').replace(/\s+/g, ' ').trim();
+}
+function waMontaMensagem() {
+  var linhas = ['*TABELA DE PREÇOS — CANÇÃO ALIMENTOS*'];
   var val = document.querySelector('.validity-badge');
-  if (val) linhas.push('_' + val.textContent.replace(/^[^A-Za-zÀ-ú]+/, '').trim() + '_');
-  var grupos = document.querySelectorAll('#waList .wa-grp, #waList .wa-item');
-  var atual = null, qtd = 0;
-  grupos.forEach(function(el) {
-    if (el.classList.contains('wa-grp')) { atual = el.textContent.trim(); vistos[atual] = false; return; }
+  if (val) linhas.push('_' + waLimpa(val.textContent) + '_');
+  var atual = null, qtd = 0, aberto = false;
+  document.querySelectorAll('#waList .wa-grp, #waList .wa-item').forEach(function(el) {
+    if (el.classList.contains('wa-grp')) { atual = waLimpa(el.textContent); aberto = false; return; }
     var c = el.querySelector('input[type=checkbox]');
     if (!c || !c.checked) return;
     var it = waItens[parseInt(c.dataset.i, 10)];
     if (!it) return;
-    if (!vistos[atual]) { linhas.push(''); linhas.push('*' + atual + '*'); vistos[atual] = true; }
-    linhas.push('• ' + it.nome + ': R$ ' + it.preco + '/kg');
+    if (!aberto) { linhas.push(''); linhas.push('*' + atual.toLocaleUpperCase('pt-BR') + '*'); linhas.push(''); aberto = true; }
+    linhas.push('• ' + waLimpa(it.nome) + ' — R$ ' + it.preco + '/kg');
     qtd++;
   });
-  if (!qtd) return;
-  window.open('https://wa.me/?text=' + encodeURIComponent(linhas.join('\n')), '_blank');
+  return qtd ? linhas.join('\n') : '';
+}
+function waSend() {
+  var msg = waMontaMensagem();
+  if (!msg) return;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+function waCopy() {
+  var msg = waMontaMensagem();
+  if (!msg) return;
+  var ok = function() {
+    var b = document.getElementById('waCopyBtn'); var old = b.textContent;
+    b.textContent = 'Copiado! Cole no WhatsApp'; setTimeout(function(){ b.textContent = old; }, 2500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg).then(ok).catch(function(){ waCopyFallback(msg, ok); });
+  } else { waCopyFallback(msg, ok); }
+}
+function waCopyFallback(msg, ok) {
+  var t = document.createElement('textarea'); t.value = msg; t.style.position = 'fixed'; t.style.opacity = '0';
+  document.body.appendChild(t); t.select();
+  try { document.execCommand('copy'); ok(); } catch (e) {}
+  t.remove();
 }
 
 function qcShareWhatsapp() {
@@ -1715,7 +1739,7 @@ document.addEventListener('click', function(e) {
     <div class="wa-list" id="waList"></div>
     <div class="qc-actions">
       <button class="qc-btn qc-btn-wa" id="waSendBtn" onclick="waSend()">Abrir WhatsApp</button>
-      <button class="qc-btn qc-btn-close" onclick="closeWa()">Fechar</button>
+      <button class="qc-btn qc-btn-close" id="waCopyBtn" onclick="waCopy()">Copiar mensagem</button>
     </div>
   </div>
 </div>
