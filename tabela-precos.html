@@ -508,6 +508,22 @@
   }
   .priority-banner span:not(.badge) { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
 
+
+  /* ── ENVIAR NO WHATSAPP (só R$/kg e 1 CX) ── */
+  .controls-right { display: flex; gap: 8px; align-items: center; }
+  .wa-share-btn { background: #22C55E !important; color: #fff !important; border-color: #22C55E !important; font-weight: 700; }
+  .wa-list { max-height: 46vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; }
+  .wa-grp { font-family: var(--font-body); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); background: var(--cream); padding: 7px 13px; position: sticky; top: 0; }
+  .wa-item { display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-bottom: 1px solid var(--line); font-family: var(--font-body); font-size: 13px; color: var(--ink); cursor: pointer; }
+  .wa-item:last-child { border-bottom: none; }
+  .wa-item input { width: 18px; height: 18px; accent-color: #22C55E; flex: 0 0 auto; }
+  .wa-item .wa-n { flex: 1; font-weight: 600; }
+  .wa-item .wa-p { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--red); white-space: nowrap; }
+  .wa-note { font-family: var(--font-body); font-size: 11.5px; color: var(--ink-3); margin-bottom: 10px; line-height: 1.45; }
+  .wa-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: var(--font-body); font-size: 12px; color: var(--ink-2); }
+  .wa-tools button { background: none; border: 0; color: var(--red); font-weight: 700; font-size: 12px; cursor: pointer; }
+  @media (max-width: 520px) { .wa-share-btn { padding: 8px 10px; } }
+
   /* ── SECTIONS ── */
   .section { margin: 2px 12px 0; }
   .section.first-of-group { margin-top: 0; }
@@ -936,7 +952,10 @@ body{background-image:radial-gradient(circle at 8% 10%,rgba(255,73,28,.07),trans
     <option value="price-asc">Menor preço</option>
     <option value="price-desc">Maior preço</option>
   </select>
-  <button class="compare-toggle-btn" id="compareToggleBtn" onclick="toggleCompareMode()">⚖️ Comparar</button>
+  <div class="controls-right">
+    <button class="compare-toggle-btn wa-share-btn" id="waShareBtn" onclick="openWaShare()">📲 Enviar no WhatsApp</button>
+    <button class="compare-toggle-btn" id="compareToggleBtn" onclick="toggleCompareMode()">⚖️ Comparar</button>
+  </div>
 </div>
 
 <div class="no-results" id="noRes">Nenhum produto encontrado.</div>
@@ -1314,6 +1333,94 @@ function qcUpdate() {
   document.getElementById('qcSubtotal').textContent = qcFormatBRL(subtotal);
 }
 
+// ── ENVIO PELO WHATSAPP: só R$/kg e 1 CX ──
+// Regra de negócio: para o cliente seguem apenas o preço por kg e o preço de
+// 1 caixa. Faixas de volume (10 CX+, 20 CX+), R$/Bdj e R$/UN ficam de fora.
+function waPermitido(label) {
+  var l = String(label || '').replace(/\s+/g, ' ').trim().toUpperCase();
+  return l === 'R$/KG' || l === '1 CX';
+}
+function waPrecosDoCard(card) {
+  var body = card.parentElement;
+  var hdr = body ? body.querySelector('.col-hdr, .col-hdr-2, .col-hdr-1') : null;
+  var labels = hdr ? Array.from(hdr.querySelectorAll('span')).slice(1).map(function(s){ return s.textContent.trim(); }) : [];
+  var out = [];
+  Array.from(card.querySelectorAll('.p')).forEach(function(el, i) {
+    var t = el.textContent.trim();
+    if (waPermitido(labels[i]) && qcParseBRL(t) !== null) out.push(t);
+  });
+  return out;
+}
+var waItens = [];
+function openWaShare() {
+  waItens = [];
+  var grupos = [];
+  document.querySelectorAll('.section').forEach(function(sec) {
+    if (sec.style.display === 'none') return;
+    var h2 = sec.querySelector('.section-hdr h2');
+    var titulo = h2 ? h2.textContent.trim() : '';
+    var lista = [];
+    sec.querySelectorAll('.card:not(.hidden), .card-2:not(.hidden), .card-1:not(.hidden)').forEach(function(card) {
+      var nome = card.querySelector('.name');
+      var precos = waPrecosDoCard(card);
+      if (!nome || !precos.length) return;
+      var it = { nome: nome.textContent.trim(), preco: precos[0], ativo: true };
+      waItens.push(it); lista.push(it);
+    });
+    if (lista.length) grupos.push({ titulo: titulo, itens: lista });
+  });
+  var html = '';
+  grupos.forEach(function(g) {
+    html += '<div class="wa-grp">' + g.titulo + '</div>';
+    g.itens.forEach(function(it) {
+      var idx = waItens.indexOf(it);
+      html += '<label class="wa-item"><input type="checkbox" checked data-i="' + idx + '" onchange="waAtualiza()"><span class="wa-n">' + it.nome + '</span><span class="wa-p">R$ ' + it.preco + '/kg</span></label>';
+    });
+  });
+  if (!html) html = '<div class="wa-item">Nenhum produto na tela. Limpe a busca ou escolha outra categoria.</div>';
+  document.getElementById('waList').innerHTML = html;
+  document.getElementById('waSub').textContent = waItens.length + ' produto' + (waItens.length !== 1 ? 's' : '') + ' na tela — desmarque o que não quiser enviar';
+  waAtualiza();
+  document.getElementById('waOverlay').classList.add('open');
+}
+function closeWa() { document.getElementById('waOverlay').classList.remove('open'); }
+function waAtualiza() {
+  var n = 0;
+  document.querySelectorAll('#waList input[type=checkbox]').forEach(function(c) {
+    var it = waItens[parseInt(c.dataset.i, 10)];
+    if (it) it.ativo = c.checked;
+    if (c.checked) n++;
+  });
+  document.getElementById('waCount').textContent = n + ' selecionado' + (n !== 1 ? 's' : '');
+  document.getElementById('waSendBtn').disabled = n === 0;
+  document.getElementById('waSendBtn').style.opacity = n === 0 ? '.5' : '1';
+}
+function waToggleAll() {
+  var boxes = document.querySelectorAll('#waList input[type=checkbox]');
+  var todos = Array.prototype.every.call(boxes, function(c){ return c.checked; });
+  boxes.forEach(function(c){ c.checked = !todos; });
+  waAtualiza();
+}
+function waSend() {
+  var vistos = {}, linhas = ['*Tabela de Preços — Canção Alimentos*'];
+  var val = document.querySelector('.validity-badge');
+  if (val) linhas.push('_' + val.textContent.replace(/^[^A-Za-zÀ-ú]+/, '').trim() + '_');
+  var grupos = document.querySelectorAll('#waList .wa-grp, #waList .wa-item');
+  var atual = null, qtd = 0;
+  grupos.forEach(function(el) {
+    if (el.classList.contains('wa-grp')) { atual = el.textContent.trim(); vistos[atual] = false; return; }
+    var c = el.querySelector('input[type=checkbox]');
+    if (!c || !c.checked) return;
+    var it = waItens[parseInt(c.dataset.i, 10)];
+    if (!it) return;
+    if (!vistos[atual]) { linhas.push(''); linhas.push('*' + atual + '*'); vistos[atual] = true; }
+    linhas.push('• ' + it.nome + ': R$ ' + it.preco + '/kg');
+    qtd++;
+  });
+  if (!qtd) return;
+  window.open('https://wa.me/?text=' + encodeURIComponent(linhas.join('\n')), '_blank');
+}
+
 function qcShareWhatsapp() {
   var qty = Math.max(1, parseInt(document.getElementById('qcQty').value, 10) || 1);
   var subtotal = qty * (qcState.unitPrice || 0);
@@ -1321,7 +1428,8 @@ function qcShareWhatsapp() {
   var lines = ['*' + qcState.name + '*'];
   if (qcState.sectionTitle) lines.push('_' + qcState.sectionTitle + '_');
   qcState.rows.forEach(function(r) {
-    if (r.text) lines.push(r.label + ': ' + r.text);
+    // só R$/kg e 1 CX seguem para o cliente (ver waPermitido)
+    if (r.text && waPermitido(r.label)) lines.push('Preço: R$ ' + r.text + '/kg');
   });
   if (qty > 1) {
     lines.push('');
@@ -1591,6 +1699,23 @@ document.addEventListener('click', function(e) {
         Compartilhar
       </button>
       <button class="qc-btn qc-btn-close" onclick="closeQC()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: enviar tabela no WhatsApp (só R$/kg e 1 CX) -->
+<div class="qc-overlay" id="waOverlay" onclick="if(event.target===this) closeWa()">
+  <div class="qc-modal">
+    <button class="qc-close" onclick="closeWa()">✕</button>
+    <div class="qc-handle"></div>
+    <div class="qc-title">Enviar preços no WhatsApp</div>
+    <div class="qc-sub" id="waSub">Produtos que estão na tela</div>
+    <div class="wa-note">A mensagem leva somente o <b>preço por kg (R$/kg)</b> e o <b>preço de 1 caixa</b>. Faixas por volume (10 CX+, 20 CX+) e preço por bandeja/unidade não são enviados.</div>
+    <div class="wa-tools"><span id="waCount">0 selecionados</span><button type="button" onclick="waToggleAll()">Marcar / desmarcar todos</button></div>
+    <div class="wa-list" id="waList"></div>
+    <div class="qc-actions">
+      <button class="qc-btn qc-btn-wa" id="waSendBtn" onclick="waSend()">Abrir WhatsApp</button>
+      <button class="qc-btn qc-btn-close" onclick="closeWa()">Fechar</button>
     </div>
   </div>
 </div>
