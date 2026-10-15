@@ -1406,9 +1406,8 @@ function waLimpa(t) {
   return String(t || '').replace(/[\u{1F000}-\u{1FFFF}\u{2190}-\u{2BFF}️‍]/gu, '').replace(/\s+/g, ' ').trim();
 }
 function waMontaMensagem() {
-  var linhas = ['*TABELA DE PREÇOS — CANÇÃO ALIMENTOS*'];
-  var val = document.querySelector('.validity-badge');
-  if (val) linhas.push('_' + waLimpa(val.textContent) + '_');
+  var barra = '━━━━━━━━━━━━━━━━━━━━';
+  var linhas = [barra, '*TABELA DE PREÇOS*', '*CANÇÃO ALIMENTOS*', barra, '', '*!Válida até Hoje*'];
   var atual = null, qtd = 0, aberto = false;
   document.querySelectorAll('#waList .wa-grp, #waList .wa-item').forEach(function(el) {
     if (el.classList.contains('wa-grp')) { atual = waLimpa(el.textContent); aberto = false; return; }
