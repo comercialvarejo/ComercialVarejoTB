@@ -1425,14 +1425,23 @@ function waMontaMensagem() {
 function waSend() {
   var msg = waMontaMensagem();
   if (!msg) return;
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  var celular = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (celular) {
+    // no celular o link já leva o texto com as quebras de linha
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    return;
+  }
+  // no computador: copia a mensagem formatada (igual ao botão "Copiar mensagem")
+  // e abre o WhatsApp Web; é só escolher a conversa e colar com Ctrl+V
+  waCopy(true);
+  window.open('https://web.whatsapp.com/', '_blank');
 }
-function waCopy() {
+function waCopy(viaZap) {
   var msg = waMontaMensagem();
   if (!msg) return;
   var ok = function() {
-    var b = document.getElementById('waCopyBtn'); var old = b.textContent;
-    b.textContent = 'Copiado! Cole no WhatsApp'; setTimeout(function(){ b.textContent = old; }, 2500);
+    var b = document.getElementById(viaZap === true ? 'waSendBtn' : 'waCopyBtn'); var old = b.textContent;
+    b.textContent = 'Copiado! Cole no WhatsApp (Ctrl+V)'; setTimeout(function(){ b.textContent = old; }, 4000);
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(msg).then(ok).catch(function(){ waCopyFallback(msg, ok); });
