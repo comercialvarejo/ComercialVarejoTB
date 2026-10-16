@@ -730,13 +730,6 @@ function summaryText(x){const r=cur(x),st=status(x),t=tot(x);const contra=r&&r.d
     ...itens(x).map((i,k)=>`• ${i.produto}: ${fmt(i.qtd)} kg × ${pkg(i.valor)} = ${brl(i.qtd*i.valor)}${contra&&r.cvi&&r.cvi[k]!=null?` → contra ${pkg(r.cvi[k])}`:''}`),
     `Total: ${fmt(t.kg)} kg · ${brl(t.rs)} (média ${pkg(t.med)})${x.desc?' · Desconto: '+fmt(x.desc)+'%':''}`,x.obs?`Obs.: ${x.obs}`:'',`Status: ${ST[st]}`,
     r?`Retorno: ${r.com||DEC[r.dec]}${contra?` · novo total ${brl(totContra(x,r))}${r.cd!=null?', desconto '+fmt(r.cd)+'%':''}`:''}`:''].filter(Boolean).join('\n');}
-/* Texto que SAI do painel (copiar / WhatsApp): sem observação do vendedor e sem nome de quem aprovou/reprovou.
-   (summaryText continua sendo usado só nos avisos internos por e-mail.) */
-function shareText(x){const r=cur(x),st=status(x),t=tot(x);const contra=r&&r.dec==='contra';
-  return [`Proposta ${x.n} - ${x.cliente}`,`Vendedor: ${vend(x)}${isRep(x)?' (representante)':''}${x.supervisor?' | Supervisor: '+x.supervisor:''}`,x.cod?`Código do cliente: ${x.cod}`:'',x.doc?`CNPJ/CPF: ${fmtDoc(x.doc)}`:'',
-    ...itens(x).map((i,k)=>`- ${i.produto}: ${fmt(i.qtd)} kg x ${pkg(i.valor)} = ${brl(i.qtd*i.valor)}${contra&&r.cvi&&r.cvi[k]!=null?` -> contra ${pkg(r.cvi[k])}`:''}`),
-    `Total: ${fmt(t.kg)} kg | ${brl(t.rs)} (média ${pkg(t.med)})${x.desc?' | Desconto: '+fmt(x.desc)+'%':''}`,`Status: ${ST[st]}`,
-    r?`Retorno: ${r.com||DEC[r.dec]}${contra?` | novo total ${brl(totContra(x,r))}${r.cd!=null?', desconto '+fmt(r.cd)+'%':''}`:''}`:''].filter(Boolean).join('\n');}
 function liberadoAntes(a,x){
   if(!a||(a.dec!=='contra'&&a.dec!=='aprovada')) return '';
   let linhas=[];
@@ -755,11 +748,11 @@ function liberadoAntes(a,x){
 function renderDetail(m,id,adm){
   const x=get(id); const st=status(x); const c=cur(x);
   let h=`<section class="card"><div class="phead"><div><div class="eyebrow num">${adm?esc(vend(x))+(isRep(x)?' · representante':'')+' · ':''}Proposta ${x.n}${(x.versao||1)>1?' · versão '+x.versao:''}</div><h2>${esc(x.cliente)} <span class="pill st-${st}">${esc(ST[st])}</span></h2></div>
-    <div class="actions"><button class="btn small" id="btnCopy">Copiar resumo</button><button class="btn small" id="btnWpp" style="background:#25D366;border-color:#25D366;color:#fff">Enviar no WhatsApp</button>
+    <div class="actions"><button class="btn small" id="btnCopy">Copiar resumo</button>
     ${!adm&&(st==='info'||st==='contra'||st==='recusada')?`<button class="btn small${st==='info'?' primary':''}" id="btnReenviar">${st==='info'?'Completar e reenviar':'Enviar nova versão'}</button>`:''}
     ${!adm&&(st==='aprovada'||st==='aceita')?`<button class="btn small primary" id="btnCopiarProp">Copiar proposta</button>`:''}
     ${adm&&c&&!S.respEdit?`<button class="btn small" id="btnAlterar">Alterar retorno</button>`:''}</div></div>`;
-  if(S.copy===id) h+=`<div class="copybox"><div class="flabel" style="margin-bottom:6px">Selecione e copie o texto</div><textarea id="copyArea" readonly>${esc(shareText(x))}</textarea></div>`;
+  if(S.copy===id) h+=`<div class="copybox"><div class="flabel" style="margin-bottom:6px">Selecione e copie o texto</div><textarea id="copyArea" readonly>${esc(summaryText(x))}</textarea></div>`;
   h+=timeline(x);
   const t=tot(x); const showC=c&&c.dec==='contra'&&!(adm&&S.respEdit);
   const vRs=showC?totContra(x,c):t.rs; const vMed=t.kg?vRs/t.kg:0;
@@ -906,8 +899,7 @@ document.addEventListener('click',async ev=>{
     case 'btnAv': saveAv($('#avTxt').value); break;
     case 'btnLimparMinhas': limparMinhas(); break;
     case 'btnLimparTodas': limparTodas(); break;
-    case 'btnWpp': {const txt=shareText(get(S.sel));window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank','noopener');break;}
-    case 'btnCopy': {const txt=shareText(get(S.sel));
+    case 'btnCopy': {const txt=summaryText(get(S.sel));
       try{await navigator.clipboard.writeText(txt);toast('Resumo copiado.');}catch(e){S.copy=S.sel;render();const a=$('#copyArea');if(a){a.focus();a.select();}}
       break;}
   }
