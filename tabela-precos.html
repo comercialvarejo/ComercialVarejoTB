@@ -626,6 +626,13 @@
   .card-1.hidden { display: none; }
   .card-1.priority-card { background: var(--green-lt); }
 
+
+  /* Descrição do item (associada ao Estoque) */
+  .name[data-est]::after{content:attr(data-est);display:block;margin-top:2px;font-size:10.5px;font-weight:500;color:var(--ink-3);line-height:1.3;letter-spacing:.1px}
+  .name.priority-name[data-est]::after{color:var(--green-dk);opacity:.8}
+  body.dark .name[data-est]::after{color:#A99C8C}
+  body.dark .name.priority-name[data-est]::after{color:#9FE6B8}
+
   /* ── TIPOGRAFIA DE PRODUTO E PREÇO ── */
   .name { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.32; padding-right: 6px; }
   .name.priority-name { color: var(--green-dk); }
@@ -1707,6 +1714,134 @@ document.addEventListener('click', function(e) {
 
 
 
+</script>
+
+<script>
+/* Associa cada item da Tabela de Preços ao item do Estoque (nome completo, código, peso da caixa e Cód. Canção).
+   ASSOC_ESTOQUE: 'seção|nome do card' -> código do estoque.  EST_INFO: código -> [nome, peso cx, cód. Canção].
+   Ao abrir, tenta atualizar EST_INFO lendo index.html (Estoque); se não conseguir, usa a cópia abaixo. */
+(function(){
+  var ASSOC_ESTOQUE = {
+"resfBdj|coxa pilão resfriado bandeja": "FRCSCANMI000052",
+"resfBdj|sobrecoxa resfriado bandeja": "FRCSCANMI000051",
+"resfBdj|coxinha da asa resfriado bandeja": "FRASCANMI000047",
+"resfBdj|meio da asa resfriado bandeja": "FRASCANMI000048",
+"resfBdj|filé de peito resfriado bandeja": "FRPTCANMI000062",
+"resfBdj|sassami resfriado bandeja": "FRPTCANMI000061",
+"resfBdj|figado resfriado bandeja": "FRMDCANMI000039",
+"resfBdj|pescoço resfriado bandeja": "FRMDCANMI000041",
+"resfBdj|moela resfriado bandeja": "FRMDCANMI000040",
+"resfBdj|coração resfriado bandeja": "FRMDCANMI000038",
+"resfBdj|sambiquira resfriado bandeja": "FRSACANMI000002",
+"resfBdj|pés resfriado bandeja": "FRPECANMI000003",
+"resfInd|frango inteiro resfriado individual": "FRINCANMI000002",
+"resfInd|coxa e sobrecoxa resfriado individual": "FRCSCANMI000018",
+"resfInd|coxinha da asa resfriado individual": "FRASCANMI000027",
+"resfInd|filé de peito resfriado individual": "FRPTCANMI000045",
+"resfInd|coração resfriado individual": "FRMDCANMI000020",
+"resfInd|moela resfriado individual": "FRMDCANMI000008",
+"resfInd|sobrecoxa resfriado individual": "FRCSCANMI000016",
+"resfInd|peito c/ osso resfriado individual": "FRPTCANMI000018",
+"resfInd|asa inteira resfriado individual": "FRASCANMI000037",
+"inteiros|frango inteiro": "FRINCANMI000003",
+"perna|coxa pilão interfolhada": "FRCSCANMI000006",
+"perna|coxa pilão bandeja 1kg": "FRCSCANMI000039",
+"perna|coxa e sobrecoxa": "FRCSCANMI000003",
+"perna|coxa e sob passarinho 10kg": "FRCSCANMI000027",
+"perna|filé de coxa c/ sobrecoxa": "FRCSCANMI000053",
+"perna|sobrecoxa": "FRCSCANMI000016",
+"peito|filé de peito": "FRPTCANMI000033",
+"peito|filé de peito interfolhado": "FRPTCANMI000033",
+"peito|filé de peito bandeja 1kg": "FRPTCANMI000059",
+"peito|recorte filé peito file coxa": "FRMRCANMI000002",
+"peito|file meio peito 1kg": "FRPTCANMI000060",
+"peito|filé grade b pct 10kg": "FRPTCANMI000053",
+"peito|filezinho sassami ind 1kg": "FRPTCANMI000043",
+"peito|sassami bandeja 1kg": "FRPTCANMI000058",
+"peito|sassami grade b pct 10kg": "FRPTCANMI000052",
+"peito|peito com osso": "FRPTCANMI000004",
+"asa|asa inteira pct": "FRASCANMI000037",
+"asa|coxinha da asa": "FRASCANMI000029",
+"asa|coxinha da asa bandeja 1kg": "FRCSCANMI000040",
+"asa|meio da asa pct 10kg": "FRASCANMI000043",
+"miudos|coração 600g bandeja": "FRMDCANMI000034",
+"miudos|coração 1kg": "FRMDCANMI000015",
+"miudos|fígado 1kg": "FRMDCANMI000016",
+"miudos|moela 1kg": "FRMDCANMI000022",
+"miudos|pés": "FRPECANME000003",
+"miudos|pescoço 1kg": "FRMDCANMI000030",
+"miudos|sambiquira 1kg": "FRSACANMI000001",
+"miudos|cms": "FRMSCANMI000005",
+"iqf|coxa pilão 1kg iqf": "FRCSCANMI000009",
+"iqf|coxa sob passarinho 1kg iqf": "FRCSCANMI000059",
+"iqf|sobrecoxa 1kg iqf": "FRCSCANMI000011",
+"iqf|coxinha da asa 1kg iqf": "FRASCANMI000010",
+"iqf|meio da asa 1kg iqf": "FRASCANMI000011",
+"iqf|filé de peito em bife 1kg iqf": "FRPTCANMI000069",
+"iqf|filezinho sassami 1kg iqf": "FRPTCANMI000010",
+"iqf|filé meio peito 1kg iqf": "FRPTCANMI000021",
+"iqf|filé de sobrecoxa 1kg iqf": "FRCSCANMI000055",
+"mix|pão de queijo canção 300gr": "COMPRO000081",
+"mix|pão de queijo canção 800gr": "COMPRO000082",
+"mix|filezinho empanado canção 700gr": "COMPRO000008",
+"mix|filezinho empanado canção 1kg": "COMPRO000064",
+"mix|chicken empanado canção 300gr": "COMPRO000065",
+"mix|chicken empanado canção 1kg": "COMPRO000066",
+"mix|futchicken empanado canção 300g": "COMPRO000099",
+"mix|futchicken empanado canção 1kg": "COMPRO000100",
+"mix|lasanha bolonhesa 600g": "COMPRO000094",
+"mix|lasanha quatro queijos 600g": "COMPRO000095",
+"mix|lasanha frango 600g": "COMPRO000096",
+"pescados|tilápia canção 400gr": "PEFLCANMI000002",
+"pescados|tilápia canção 800gr": "PEFLCANMI000001",
+"pescados|iscas de tilápia empanada 400gr": "PEFLCANMI000013",
+"pescados|filé de tilápia empanada 600gr": "PEFLCANMI000012",
+"pescados|small fish 400g": "COMPRO000101",
+"pescados|small fish 1,5kg": "COMPRO000102",
+"vegetais|batata canção 400gr": "COMPRO000068",
+"vegetais|batata canção 1,1kg": "COMPRO000069",
+"vegetais|batata canção 2kg": "COMPRO000067",
+"vegetais|batata noisete 400g": "COMPRO000098",
+"vegetais|aneís de cebola 1,1kg cx 11kg": "COMPRO000009",
+"vegetais|aneís de cebola 1,1kg cx 6,6kg": "COMPRO000074",
+"vegetais|mandioca 1kg": "COMPRO000003",
+"vegetais|polenta 1kg": "COMPRO000059",
+"copa|futburguer picles": "COMPRO000116",
+"copa|futburguer requeijão bacon": "COMPRO000117",
+"copa|futburguer maionese grill": "COMPRO000118",
+"copa|futchicken queijo": "COMPRO000119",
+"copa|fut wings trad coxinha empanada": "COMPRO000121",
+"copa|fut wings apim coxinha empanada": "COMPRO000123"
+};
+  var EST_INFO = {"FRASCANMI000047": ["Coxinha", "10,5 kg", "91396"], "FRCSCANMI000052": ["Coxa Pilão", "11,1 kg", "91401"], "FRPTCANMI000061": ["Sassami", "11,4 kg", "91399"], "FRASCANMI000048": ["Meio da Asa", "10,2 kg", "91402"], "FRCSCANMI000051": ["Sobrecoxa", "13 kg", "91395"], "FRPTCANMI000062": ["Meio Filé", "11,2 kg", "91397"], "FRMDCANMI000038": ["Coração", "12 kg", ""], "FRMDCANMI000041": ["Pescoço", "12 kg", ""], "FRPECANMI000003": ["Pés", "7,5 kg", ""], "FRSACANMI000002": ["Sambiquira", "12 kg", ""], "FRMDCANMI000039": ["Fígado BDJ 600g", "12 kg", ""], "FRMDCANMI000040": ["Moela BDJ 600g", "12 kg", ""], "FRPTCANMI000045": ["Filé de Peito Individual Cx Pp 20kg", "20 kg", "91324"], "FRPTCANMI000018": ["Peito com osso", "18 kg", "84376"], "FRASCANMI000027": ["Coxinha", "20 kg", "91192"], "FRCSCANMI000018": ["Coxa e Sobrecoxa", "18 kg", "84374"], "FRINCANMI000002": ["Frango Inteiro", "20 kg", "69964"], "FRMDCANMI000020": ["Coração", "20 kg", "91247"], "FRASCANMI000037": ["Asa", "20 kg", "91321"], "FRCSCANMI000016": ["Sobrecoxa", "20 kg", "71315"], "FRMDCANMI000008": ["Moela", "20 kg", "71313"], "FRINCANMI000003": ["Frango inteiro", "20 kg", "69963"], "FRASCANMI000029": ["Coxinha de asa", "20 kg", "91308"], "FRASCANMI000043": ["Meio da asa c/osso) Pct 10 KG", "20 kg", "91391"], "FRCSCANMI000003": ["Coxa e sobrecoxa", "18 kg", "2364"], "FRCSCANMI000053": ["Filé de Coxa c/ Sobrecoxa Pct 1kg", "", "91429"], "FRCSCANMI000006": ["Coxa Pilão - Interfolhada", "18 kg", "8143"], "FRCSCANMI000027": ["Coxa e sobrecoxa a passarinho Pct 10kg", "20 kg", "91404"], "FRPTCANMI000033": ["Filé de Peito - Individual", "20 kg", "91194"], "FRPTCANMI000004": ["Peito com osso", "18 kg", "2392"], "FRPTCANMI000060": ["Meio Filé - Pct 1Kg", "20 kg", "91427"], "FRPTCANMI000052": ["Sassami \"Grade B\"- Pct 10kg", "20 kg", "91385"], "FRPTCANMI000053": ["Filé de Peito \"Grade B\" - Pct 10kg", "20 kg", "91386"], "FRMRCANMI000002": ["Recorte Filé Peito + Filé Coxa", "", "54176"], "FRPTCANMI000043": ["Sassami - Individual", "20 kg", "91309"], "FRMDCANMI000015": ["Coração 1kg", "20 kg", "91263"], "FRMDCANMI000022": ["Moela 1kg", "20 kg", "91289"], "FRSACANMI000001": ["Sambiquira 1kg", "18 kg", "70142"], "FRMDCANMI000016": ["Fígado 1kg", "20 kg", "91254"], "FRPECANME000003": ["Pés Pct 7,5", "15 kg", "91294"], "FRMSCANMI000005": ["CMS", "", "64076"], "FRMDCANMI000030": ["Pescoço 1kg", "18 kg", "91299"], "FRMDCANMI000034": ["Coração Cong. Bandeja 600g", "12 kg", "91428"], "FRCSCANMI000040": ["Coxinha da Asa Cong. Bandeja 1kg", "12 kg", "91432"], "FRCSCANMI000039": ["Coxa Pilão Cong. Bandeja 1kg", "12 kg", "91400"], "FRPTCANMI000059": ["Meio Peito Cong. Bandeja 1kg", "12 kg", "91434"], "FRPTCANMI000058": ["Sassami Cong. Bandeja 1Kg", "12 kg", "91439"], "FRCSCANMI000059": ["Coxa e Sobrecoxa a Passarinho IQF 1Kg", "10 kg", "91436"], "FRCSCANMI000009": ["Coxa Pilão IQF 1kg", "10 kg", "62160"], "FRASCANMI000011": ["Meio da Asa IQF 1kg", "10 kg", "62158"], "FRASCANMI000010": ["Coxinha IQF 1kg", "10 kg", "62157"], "FRPTCANMI000069": ["Filé de peito em Bifes IQF 1Kg", "10 kg", "91444"], "FRPTCANMI000021": ["Meio Filé IQF 1kg", "10 kg", "88846"], "FRPTCANMI000010": ["Sassami IQF 1kg", "10 kg", "62159"], "FRCSCANMI000011": ["Sobrecoxa IQF 1kg", "10 kg", "64347"], "FRCSCANMI000055": ["Filé de Sobrecoxa IQF 1Kg", "10 kg", "91438"], "COMPRO000074": ["Anel de cebola 6,6kg", "6,6 kg", "91373"], "COMPRO000009": ["Anel de cebola 11kg", "11 kg", "67983"], "COMPRO000068": ["Batata 400g", "10 kg", "91329"], "COMPRO000069": ["Batata 1,1kg", "9,9 kg", "91330"], "COMPRO000098": ["Batata Noisette 400G", "10 kg", "91408"], "COMPRO000065": ["Chicken 300g", "3 kg", "91326"], "COMPRO000066": ["Chicken 1kg", "7 kg", "91327"], "COMPRO000099": ["Fut Chicken 300g", "3 kg", "91409"], "COMPRO000100": ["Fut Chicken 1kg", "7 kg", "91410"], "COMPRO000008": ["Sassami Empanado 700g", "7 kg", "67772"], "COMPRO000064": ["Sassami Empanado 1kg", "7 kg", "91325"], "COMPRO000094": ["Lasanha Bolonhesa 600g", "7,2 kg", "91415"], "COMPRO000096": ["Lasanha Frango 600g", "7,2 kg", "91414"], "COMPRO000095": ["Lasanha Quatro Queijos 600g", "7,2 kg", "91416"], "COMPRO000003": ["Mandioca", "12 kg", "53245"], "COMPRO000059": ["Polenta", "10 kg", "91268"], "COMPRO000081": ["Pão de Queijo 300g", "9,6 kg", "91375"], "PEFLCANMI000013": ["Isca de Tilápia 400g", "3,2 kg", "91353"], "PEFLCANMI000012": ["Filé Tilápia Empanado 600g", "6 kg", "91352"], "COMPRO000101": ["Small Fish 400g", "3,2 kg", "91411"], "COMPRO000102": ["Small Fish 1,5kg", "10,5 kg", "91412"], "COMPRO000119": ["Fut Chicken c/ Recheio de Queijo", "4,2 kg", "91455"], "COMPRO000082": ["Pão de Queijo 800g", "9,6 kg", "91374"], "PEFLCANMI000001": ["Tilápia 800g", "", "91127"], "PEFLCANMI000002": ["Tilápia 400g", "10,4 kg", "91128"], "COMPRO000118": ["Fut Burguer Maionese Grill", "2,7 kg", "91454"], "COMPRO000116": ["Fut Burguer c/ Molho de Picles", "2,7 kg", "91452"], "COMPRO000117": ["Fut Burguer Bacon c/ Requeijão", "2,7 kg", "91453"], "COMPRO000121": ["Coxinha da Asa empanada tradicional (Fut Wings)", "7 kg", "91450"], "COMPRO000123": ["Coxinha da Asa empanada apimentada (Fut Wings)", "7 kg", "91451"], "COMPRO000067": ["Batata 2kg", "", "91328"]};
+  function aplicar(){
+    document.querySelectorAll('[data-sec][data-name]').forEach(function(card){
+      var cod = ASSOC_ESTOQUE[card.getAttribute('data-sec') + '|' + card.getAttribute('data-name')];
+      var el = card.querySelector('.name');
+      if(!cod || !el || !EST_INFO[cod]) return;
+      var i = EST_INFO[cod], partes = [i[0], cod];
+      if(i[1]) partes.push('Cx ' + i[1] + ' kg');
+      if(i[2]) partes.push('Cód. ' + i[2]);
+      el.setAttribute('data-est', partes.join(' · '));
+    });
+  }
+  aplicar();
+  try{
+    fetch('index.html', {cache:'no-cache'}).then(function(r){ return r.ok ? r.text() : ''; }).then(function(t){
+      if(!t) return;
+      var d = new DOMParser().parseFromString(t, 'text/html'), n = 0;
+      d.querySelectorAll('.card-info').forEach(function(ci){
+        var nm = ci.querySelector('.card-name'), cd = ci.querySelector('.card-code'), kc = ci.querySelector('.card-cancao');
+        if(!nm || !cd) return;
+        var m = cd.textContent.match(/^\s*([A-Z]+\d+)\s*·?\s*(?:Cx\s*([\d.,]+)\s*kg)?/);
+        if(!m) return;
+        var c = ((kc && kc.textContent) || '').replace('Cód. Canção:','').trim();
+        EST_INFO[m[1]] = [nm.textContent.trim(), m[2] || '', c === '—' ? '' : c]; n++;
+      });
+      if(n) aplicar();
+    }).catch(function(){});
+  }catch(e){}
+})();
 </script>
 <div class="footer-note">Canção Alimentos · Filial Apucarana</div>
 
