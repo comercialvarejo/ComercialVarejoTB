@@ -196,16 +196,16 @@ NOME_CANONICO = {
     "PEFLCANMI000002": "Tilápia 400g",
     "PEFLCANMI000001": "Tilápia 800g",
     "PEFLCANMI000011": "Tilápia em pedaços",
-    "PEFLCANMI000013": "Isca de Tilápia 400g",
-    "PEFLCANMI000012": "Filé Tilápia Empanado 600g",
+    "PEFLCANMI000013": "Tilápia Isca Emp 400g",
+    "PEFLCANMI000012": "Tilápia Filé Emp 600g",
     "COMPRO000008": "Sassami Empanado 700g",
     "COMPRO000064": "Sassami Empanado 1kg",
     "COMPRO000065": "Chicken 300g",
     "COMPRO000066": "Chicken 1kg",
     "COMPRO000099": "Fut Chicken 300g",
     "COMPRO000100": "Fut Chicken 1kg",
-    "COMPRO000121": "Coxinha da Asa empanada tradicional (Fut Wings)",
-    "COMPRO000123": "Coxinha da Asa empanada apimentada (Fut Wings)",
+    "COMPRO000121": "FutWings Tradicional",
+    "COMPRO000123": "FutWings Apimentada",
     "COMPRO000074": "Anel de cebola 6,6kg",
     "COMPRO000009": "Anel de cebola 11kg",
     "COMPRO000068": "Batata 400g",
@@ -2177,6 +2177,57 @@ def inserir_cards_novos(html, data, linhas_brutas, programacao=None, nomes_produ
     return html, inseridos
 
 
+def _chave_ordem_alfabetica(nome):
+    """Ordem alfabética sem acento, sem diferenciar maiúscula/minúscula e
+    com números "naturais" (6,6kg vem antes de 11kg)."""
+    n = _sem_acento((nome or "").strip()).lower()
+    partes = re.split(r"(\d+)", n)
+    return [(0, int(p), "") if p.isdigit() else (1, 0, p) for p in partes if p != ""]
+
+
+def ordenar_cards_alfabeticamente(html):
+    """Dentro de cada grupo (<div class="cards">) deixa os cards em ordem
+    alfabética pelo nome exibido. Os grupos e seções continuam exatamente
+    onde estavam - só muda a ordem dos itens dentro de cada grupo. Se um
+    grupo tiver qualquer coisa além de cards (segurança), ele não é mexido."""
+    resultado = []
+    pos = 0
+    for m in re.finditer(r'<div class="cards">', html):
+        if m.start() < pos:
+            continue
+        fim = _find_matching_div_end(html, m.start())
+        if fim == -1:
+            continue
+        inicio_interno = m.end()
+        fim_interno = fim - len("</div>")
+        interno = html[inicio_interno:fim_interno]
+        cards = []
+        restante = interno
+        cursor = 0
+        ok = True
+        for cm in re.finditer(r'<div class="card[^"]*" data-name="([^"]*)"', interno):
+            if cm.start() < cursor:
+                continue
+            c_fim = _find_matching_div_end(interno, cm.start())
+            if c_fim == -1:
+                ok = False
+                break
+            if interno[cursor:cm.start()].strip():
+                ok = False
+                break
+            cards.append((cm.group(1), interno[cm.start():c_fim]))
+            cursor = c_fim
+        if not ok or len(cards) < 2 or interno[cursor:].strip():
+            continue
+        import html as _html
+        cards.sort(key=lambda c: _chave_ordem_alfabetica(_html.unescape(c[0])))
+        resultado.append(html[pos:inicio_interno])
+        resultado.append("\n      " + "\n      ".join(c[1] for c in cards) + "\n    ")
+        pos = fim_interno
+    resultado.append(html[pos:])
+    return "".join(resultado)
+
+
 def atualizar_html(html, data, validades=None, linhas_brutas=None, programacao=None, nomes_produto_programacao=None, nome_estoque="Terra Boa"):
     validades = validades or {}
     linhas_brutas = linhas_brutas or {}
@@ -2406,6 +2457,10 @@ def atualizar_html(html, data, validades=None, linhas_brutas=None, programacao=N
         f'<title>Estoque {nome_estoque} – {nova_data_badge}</title>',
         new_html,
     )
+
+    # Itens de cada grupo sempre em ordem alfabética (cards novos e
+    # renomeados entram no lugar certo sozinhos).
+    new_html = ordenar_cards_alfabeticamente(new_html)
 
     return new_html
 
