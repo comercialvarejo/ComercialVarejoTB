@@ -53,6 +53,10 @@ jobs:
           GSHEET_PRECOS_CSV_URL: ${{ secrets.GSHEET_PRECOS_CSV_URL }}
           GSHEET_PEDIDOS_CSV_URL: ${{ secrets.GSHEET_PEDIDOS_CSV_URL }}
           GSHEET_PROGRAMACAO_CSV_URL: ${{ secrets.GSHEET_PROGRAMACAO_CSV_URL }}
+          # Painel Estoque Apucarana (apucarana.html): abas próprias da filial.
+          GSHEET_CSV_URL_APUCARANA: ${{ secrets.GSHEET_CSV_URL_APUCARANA }}
+          GSHEET_VALIDADES_CSV_URL_APUCARANA: ${{ secrets.GSHEET_VALIDADES_CSV_URL_APUCARANA }}
+          GSHEET_PROGRAMACAO_CSV_URL_APUCARANA: ${{ secrets.GSHEET_PROGRAMACAO_CSV_URL_APUCARANA }}
           # Só true quando a rodada foi disparada manualmente com a caixinha
           # "Forçar publicação..." marcada - nas rodadas automáticas (hora em
           # hora) fica sempre false, ou seja, a trava de segurança continua
@@ -75,7 +79,10 @@ jobs:
         run: |
           git config user.name "estoque-bot"
           git config user.email "actions@github.com"
-          git add index.html tabela-precos.html pedidos-em-aberto.html
+          # Além das páginas de dados (estoque Terra Boa e Apucarana, preços e
+          # pedidos), entram as demais páginas só para o robô poder corrigir o
+          # menu de abas nelas (Terra Boa / Apucarana).
+          git add index.html apucarana.html tabela-precos.html pedidos-em-aberto.html emails-padrao.html acompanhamento-vendedores.html propostas-retorno.html ociosidade-frete.html
           if git diff --cached --quiet; then
             echo "Nada mudou, sem commit."
           else
