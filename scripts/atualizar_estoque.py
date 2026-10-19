@@ -1,5 +1,6 @@
 """
-Atualiza o index.html do Estoque Apucarana a partir da Planilha Google
+Atualiza os painéis de estoque (index.html = Estoque Terra Boa e
+apucarana.html = Estoque Apucarana) a partir da Planilha Google
 ("banco de dados" do estoque), publicada na web como CSV.
 
 Requer 1 GitHub Secret:
@@ -9,6 +10,13 @@ Requer 1 GitHub Secret:
 
 Secrets opcionais (o script funciona sem elas, só fica sem o recurso
 correspondente):
+  GSHEET_CSV_URL_APUCARANA   -> aba "Estoque Apucarana Protheus" (CSV) -
+                                 alimenta o painel apucarana.html
+  GSHEET_VALIDADES_CSV_URL_APUCARANA   -> aba "Validades Apucarana"
+  GSHEET_PROGRAMACAO_CSV_URL_APUCARANA -> aba "Programação de Cargas Apucarana"
+                                 (os dois alimentam os botões "ver validades"
+                                 e "programação" do painel apucarana.html,
+                                 com as mesmas regras do Terra Boa)
   GSHEET_VALIDADES_CSV_URL   -> botão "ver validades" de cada card
   GSHEET_PRECOS_CSV_URL      -> tabela-precos.html
   GSHEET_PEDIDOS_CSV_URL     -> pedidos-em-aberto.html
@@ -43,8 +51,16 @@ VALIDADES_CSV_URL = os.environ.get("GSHEET_VALIDADES_CSV_URL")
 PRECOS_CSV_URL = os.environ.get("GSHEET_PRECOS_CSV_URL")
 PEDIDOS_CSV_URL = os.environ.get("GSHEET_PEDIDOS_CSV_URL")
 PROGRAMACAO_CSV_URL = os.environ.get("GSHEET_PROGRAMACAO_CSV_URL")
+APUCARANA_CSV_URL = os.environ.get("GSHEET_CSV_URL_APUCARANA")
+APUCARANA_VALIDADES_CSV_URL = os.environ.get("GSHEET_VALIDADES_CSV_URL_APUCARANA")
+APUCARANA_PROGRAMACAO_CSV_URL = os.environ.get("GSHEET_PROGRAMACAO_CSV_URL_APUCARANA")
 
-REPO_INDEX_PATH = "index.html"
+REPO_INDEX_PATH = "index.html"          # Estoque Terra Boa
+REPO_APUCARANA_PATH = "apucarana.html"  # Estoque Apucarana
+# Marcador que fica dentro do apucarana.html enquanto ele ainda não recebeu a
+# 1ª carga real da aba "Estoque Apucarana Protheus": nessa rodada a trava de
+# "queda de mais de 50%" é ignorada (o arquivo nasce como cópia do Terra Boa).
+MARCADOR_PRIMEIRA_CARGA = "<!-- APUCARANA-PRIMEIRA-CARGA -->"
 REPO_PRECOS_PATH = "tabela-precos.html"
 REPO_PEDIDOS_PATH = "pedidos-em-aberto.html"
 
@@ -2161,7 +2177,7 @@ def inserir_cards_novos(html, data, linhas_brutas, programacao=None, nomes_produ
     return html, inseridos
 
 
-def atualizar_html(html, data, validades=None, linhas_brutas=None, programacao=None, nomes_produto_programacao=None):
+def atualizar_html(html, data, validades=None, linhas_brutas=None, programacao=None, nomes_produto_programacao=None, nome_estoque="Terra Boa"):
     validades = validades or {}
     linhas_brutas = linhas_brutas or {}
     programacao = programacao or {}
@@ -2386,8 +2402,8 @@ def atualizar_html(html, data, validades=None, linhas_brutas=None, programacao=N
         new_html,
     )
     new_html = re.sub(
-        r'<title>Estoque Apucarana – [^<]*</title>',
-        f'<title>Estoque Apucarana – {nova_data_badge}</title>',
+        r'<title>Estoque [^<–]*– [^<]*</title>',
+        f'<title>Estoque {nome_estoque} – {nova_data_badge}</title>',
         new_html,
     )
 
@@ -3000,7 +3016,7 @@ def _contar_cards_estoque(html):
     return len(re.findall(r'<div class="card[^"]*" data-name="', html))
 
 
-def validar_estoque(data, html_atual):
+def validar_estoque(data, html_atual, ignorar_queda=False):
     if not data:
         raise ErroValidacao([
             "a planilha de estoque voltou vazia (0 linhas) - "
@@ -3008,7 +3024,7 @@ def validar_estoque(data, html_atual):
             "planilha não está mais publicada na web"
         ])
     base = _contar_cards_estoque(html_atual)
-    if not FORCAR_VALIDACAO and base >= MINIMO_PARA_CHECAR_QUEDA and len(data) < base * LIMITE_QUEDA:
+    if not ignorar_queda and not FORCAR_VALIDACAO and base >= MINIMO_PARA_CHECAR_QUEDA and len(data) < base * LIMITE_QUEDA:
         raise ErroValidacao([
             f"o número de itens de estoque caiu de {base} pra {len(data)} "
             f"(mais de {int(LIMITE_QUEDA * 100)}%) de uma rodada pra outra - "
@@ -3170,6 +3186,93 @@ def validar_pedidos(pedidos, html_atual):
     return avisos
 
 
+
+# ── Menu de abas: "Estoque" virou "Terra Boa" e ganhou a aba "Apucarana" ──
+# Roda em TODAS as páginas .html do repositório a cada rodada (é idempotente:
+# se já está certo, não muda nada). Assim, mesmo que uma página seja
+# substituída por uma versão antiga, o menu se corrige sozinho na rodada
+# seguinte.
+def garantir_menu_estoques(html):
+    if 'class="page-tab' not in html:
+        return html
+    novo = re.sub(
+        r'(<a href="\./index\.html" class="page-tab(?: active)?">)📦 Estoque(</a>)',
+        r'\1📦 Terra Boa\2',
+        html,
+    )
+    if 'href="./apucarana.html"' not in novo:
+        novo = re.sub(
+            r'(<a href="\./index\.html" class="page-tab(?: active)?">📦 Terra Boa</a>)',
+            r'\1\n    <a href="./apucarana.html" class="page-tab">📦 Apucarana</a>',
+            novo, count=1,
+        )
+    return novo
+
+
+def corrigir_menu_em_todas_as_paginas():
+    import glob
+    for caminho in sorted(glob.glob("*.html")):
+        try:
+            with open(caminho, encoding="utf-8") as f:
+                atual = f.read()
+            novo = garantir_menu_estoques(atual)
+            if novo != atual:
+                with open(caminho, "w", encoding="utf-8") as f:
+                    f.write(novo)
+                print(f"OK - menu de abas atualizado em {caminho}")
+        except Exception as e:
+            print(f"AVISO - não consegui ajustar o menu de {caminho}: {e}")
+
+
+def atualizar_apucarana(houve_erro_ref):
+    """Painel do Estoque Apucarana: mesma lógica do Terra Boa, mas lendo a
+    aba "Estoque Apucarana Protheus" e gravando em apucarana.html.
+    Os botões "ver validades" e "programação" usam as abas próprias da
+    Apucarana (Validades Apucarana / Programação de Cargas Apucarana), com
+    exatamente as mesmas regras do Terra Boa. Sem a secret correspondente, o
+    botão simplesmente não aparece (e uma falha de download não trava o
+    estoque)."""
+    if not APUCARANA_CSV_URL:
+        print("AVISO - GSHEET_CSV_URL_APUCARANA não configurada: painel Apucarana não foi atualizado.")
+        return
+    if not os.path.exists(REPO_APUCARANA_PATH):
+        print(f"AVISO - {REPO_APUCARANA_PATH} não existe no repositório: suba o arquivo primeiro.")
+        return
+    try:
+        csv_ap = baixar_csv(APUCARANA_CSV_URL)
+        data_ap, linhas_ap = carregar_saldos(csv_ap)
+
+        validades_ap = {}
+        if APUCARANA_VALIDADES_CSV_URL:
+            try:
+                validades_ap = carregar_validades(baixar_csv(APUCARANA_VALIDADES_CSV_URL))
+            except Exception as e:
+                print(f"AVISO - falha ao carregar validades da Apucarana: {e}")
+        programacao_ap, nomes_prog_ap = {}, {}
+        if APUCARANA_PROGRAMACAO_CSV_URL:
+            try:
+                programacao_ap, nomes_prog_ap = carregar_programacao_cargas(baixar_csv(APUCARANA_PROGRAMACAO_CSV_URL))
+            except Exception as e:
+                print(f"AVISO - falha ao carregar programação de cargas da Apucarana: {e}")
+        with open(REPO_APUCARANA_PATH, encoding="utf-8") as f:
+            html_ap = f.read()
+        primeira = MARCADOR_PRIMEIRA_CARGA in html_ap
+        validar_estoque(data_ap, html_ap, ignorar_queda=primeira)
+        novo_ap = atualizar_html(html_ap, data_ap, validades_ap, linhas_ap, programacao_ap, nomes_prog_ap, nome_estoque="Apucarana")
+        novo_ap = novo_ap.replace(MARCADOR_PRIMEIRA_CARGA, "")
+        with open(REPO_APUCARANA_PATH, "w", encoding="utf-8") as f:
+            f.write(novo_ap)
+        print(f"OK - Apucarana: {len(data_ap)} códigos de estoque, {len(validades_ap)} com validade, {len(programacao_ap)} com programação processados" + (" (primeira carga)." if primeira else "."))
+    except ErroValidacao as e:
+        houve_erro_ref[0] = True
+        print("❌ ERRO DE VALIDAÇÃO (estoque Apucarana) - apucarana.html NÃO foi alterado, publicação cancelada pra esta seção:")
+        for erro in e.erros:
+            print(f"  - {erro}")
+    except Exception as e:
+        # Falha na aba da Apucarana não pode derrubar o Terra Boa/preços/pedidos.
+        print(f"AVISO - falha ao atualizar estoque Apucarana: {e}")
+
+
 def main():
     csv_text = baixar_csv(CSV_URL)
     houve_erro_bloqueante = False
@@ -3206,7 +3309,7 @@ def main():
 
     try:
         validar_estoque(data, html)
-        new_html = atualizar_html(html, data, validades, linhas_brutas, programacao, nomes_produto_programacao)
+        new_html = atualizar_html(html, data, validades, linhas_brutas, programacao, nomes_produto_programacao, nome_estoque="Terra Boa")
         with open(REPO_INDEX_PATH, "w", encoding="utf-8") as f:
             f.write(new_html)
         print(f"OK - {len(data)} códigos de estoque, {len(validades)} códigos com validade, {len(programacao)} códigos com programação processados.")
@@ -3215,6 +3318,11 @@ def main():
         print("❌ ERRO DE VALIDAÇÃO (estoque) - index.html NÃO foi alterado, publicação cancelada pra esta seção:")
         for erro in e.erros:
             print(f"  - {erro}")
+
+    _erro_ap = [False]
+    atualizar_apucarana(_erro_ap)
+    if _erro_ap[0]:
+        houve_erro_bloqueante = True
 
     if PRECOS_CSV_URL:
         try:
@@ -3270,6 +3378,8 @@ def main():
                 print(f"  - {erro}")
         except Exception as e:
             print(f"AVISO - falha ao atualizar pedidos: {e}")
+
+    corrigir_menu_em_todas_as_paginas()
 
     if houve_erro_bloqueante:
         # Termina com código de erro pra essa rodada aparecer em vermelho na
