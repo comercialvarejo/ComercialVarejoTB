@@ -6,8 +6,7 @@
 (function(){
   'use strict';
   /* Cole aqui o endereço do Apps Script publicado como "App da Web" (termina em /exec) */
-  var URL_SOLICITACAO = 'https://script.google.com/macros/s/AKfycbz-13dmSzsHE2cDG6DQOPikDZtrY7hOoR4euH1SGHHpx3NB2Ve6-lo1j-jkVizfmF66og/exec
-';
+  var URL_SOLICITACAO = 'https://script.google.com/macros/s/AKfycbz-13dmSzsHE2cDG6DQOPikDZtrY7hOoR4euH1SGHHpx3NB2Ve6-lo1j-jkVizfmF66og/exec';
   var FILIAL = 'Apucarana';
 
   function $(s, r){ return (r||document).querySelector(s); }
