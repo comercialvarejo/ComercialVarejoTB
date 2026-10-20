@@ -3279,6 +3279,22 @@ def corrigir_menu_em_todas_as_paginas():
             print(f"AVISO - não consegui ajustar o menu de {caminho}: {e}")
 
 
+# ── Botão "Solicitar data de vencimento" (só Apucarana) ──
+# O código do botão fica em solicitar-vencimento.js (raiz do repositório).
+# O robô só garante que apucarana.html carrega esse arquivo (idempotente).
+TAG_SOLICITAR_VENC = '<script src="./solicitar-vencimento.js" defer></script>'
+
+
+def garantir_script_solicitacao(html):
+    if 'solicitar-vencimento.js' in html:
+        return html
+    if not os.path.exists("solicitar-vencimento.js"):
+        return html
+    if '</body>' not in html:
+        return html
+    return html.replace('</body>', TAG_SOLICITAR_VENC + '\n</body>', 1)
+
+
 def atualizar_apucarana(houve_erro_ref):
     """Painel do Estoque Apucarana: mesma lógica do Terra Boa, mas lendo a
     aba "Estoque Apucarana Protheus" e gravando em apucarana.html.
@@ -3315,6 +3331,7 @@ def atualizar_apucarana(houve_erro_ref):
         validar_estoque(data_ap, html_ap, ignorar_queda=primeira)
         novo_ap = atualizar_html(html_ap, data_ap, validades_ap, linhas_ap, programacao_ap, nomes_prog_ap, nome_estoque="Apucarana")
         novo_ap = novo_ap.replace(MARCADOR_PRIMEIRA_CARGA, "")
+        novo_ap = garantir_script_solicitacao(novo_ap)
         with open(REPO_APUCARANA_PATH, "w", encoding="utf-8") as f:
             f.write(novo_ap)
         print(f"OK - Apucarana: {len(data_ap)} códigos de estoque, {len(validades_ap)} com validade, {len(programacao_ap)} com programação processados" + (" (primeira carga)." if primeira else "."))
