@@ -3264,6 +3264,36 @@ def garantir_menu_estoques(html):
     return novo
 
 
+# ── Tabela de Preços: contraste do tema claro (filtros/busca) ──
+# No tema claro os "cardzinhos" de filtro e a busca ficavam branco sobre
+# branco. O bloco abaixo é injetado (e atualizado, se mudar) em toda rodada.
+CSS_TEMA_CLARO_PRECOS = r'''<style id="ajuste-tema-claro">
+/* Tema claro: realça letras e cards dos filtros (antes branco sobre branco) */
+body:not(.dark) .search-wrap input{background:#fff;border:1.5px solid #cfc4b4;color:#241B15;box-shadow:0 1px 3px rgba(36,27,21,.08)}
+body:not(.dark) .search-wrap input::placeholder{color:#6b5f55;font-weight:500}
+body:not(.dark) .search-wrap input:focus{background:#fff;border-color:#be1c10;box-shadow:0 0 0 3px rgba(190,28,16,.15)}
+body:not(.dark) .search-wrap::before{border-color:#6b5f55}
+body:not(.dark) .search-wrap::after{background:#6b5f55}
+body:not(.dark) .pill{background:#fff;color:#3b3029;border:1.5px solid #cfc4b4;box-shadow:0 1px 2px rgba(36,27,21,.06)}
+body:not(.dark) .pill:hover{border-color:#be1c10;color:#be1c10}
+body:not(.dark) .pill.active{background:linear-gradient(135deg,#d3201a,#a3120c);color:#fff;border-color:transparent}
+body:not(.dark) .pill.priority-pill{background:#e6f6ec;color:#0f5c33;border-color:#2e9e5b}
+body:not(.dark) .pill.priority-pill:hover{background:#d3f0dc;color:#0f5c33;border-color:#1f8a4a}
+body:not(.dark) .pill.priority-pill.active{background:#14804a;color:#fff;border-color:#14804a}
+body:not(.dark) .pill.copa-pill{background:#fff6cc;color:#173f9c;border-color:#e0b400}
+body:not(.dark) .pill.copa-pill:hover{background:#ffee99;color:#173f9c;border-color:#c99a00}
+body:not(.dark) .pill.copa-pill.active{background:#ffd800;color:#0b2a7a;border-color:#ffd800}
+</style>'''
+
+
+def garantir_css_tema_claro(html):
+    if '</head>' not in html:
+        return html
+    if 'id="ajuste-tema-claro"' in html:
+        return re.sub(r'<style id="ajuste-tema-claro">.*?</style>', lambda m: CSS_TEMA_CLARO_PRECOS, html, count=1, flags=re.S)
+    return html.replace('</head>', CSS_TEMA_CLARO_PRECOS + '\n</head>', 1)
+
+
 def corrigir_menu_em_todas_as_paginas():
     import glob
     for caminho in sorted(glob.glob("*.html")):
@@ -3271,6 +3301,8 @@ def corrigir_menu_em_todas_as_paginas():
             with open(caminho, encoding="utf-8") as f:
                 atual = f.read()
             novo = garantir_menu_estoques(atual)
+            if caminho.endswith('tabela-precos.html'):
+                novo = garantir_css_tema_claro(novo)
             if novo != atual:
                 with open(caminho, "w", encoding="utf-8") as f:
                     f.write(novo)
