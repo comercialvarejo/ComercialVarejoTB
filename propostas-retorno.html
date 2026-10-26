@@ -825,17 +825,18 @@ function filtrosHtml(pre){const ap=aprovadoresVistos();
   <div class="fx">${[['hoje','Hoje'],['7','7 dias'],['30','30 dias']].map(([k,l])=>`<button class="btn small ghost" data-per="${k}">${l}</button>`).join('')}${filtroAtivo()?'<button class="btn small" id="btnLimparFiltros">Limpar filtros</button>':''}</div></div>`;}
 function histRows(){return list(false).filter(i=>passaFiltro(i.x)).sort((a,b)=>new Date(b.x.enviadaEm)-new Date(a.x.enviadaEm)).map(i=>{const c=cur(i.x);return {...i,r:c,t:c?new Date(c.em)-new Date(i.x.enviadaEm):null};});}
 function indicadores(rows){
-  const now=Date.now(); const z=()=>({env:0,ag:0,apr:0,contra:0,aceita:0,rec:0,info:0,resp:0,tSum:0,tN:0,kg:0,rs:0});
+  const now=Date.now(); const z=()=>({env:0,ag:0,apr:0,contra:0,aceita:0,rec:0,info:0,resp:0,tSum:0,tN:0,tMin:null,tMax:null,kg:0,rs:0,cx:0});
+  const addT=(o,t)=>{o.tSum+=t;o.tN++;o.tMin=o.tMin==null?t:Math.min(o.tMin,t);o.tMax=o.tMax==null?t:Math.max(o.tMax,t);};
   const g=z(); const pv=new Map(), pa=new Map();
-  for(const r of rows){const t=tot(r.x);const v=vend(r.x)||r.x.vendedorEmail||'Sem nome';
-    if(!pv.has(v)) pv.set(v,z()); const a=pv.get(v);
-    for(const o of [g,a]){o.env++;o.kg+=t.kg;o.rs+=t.rs;
-      if(r.st==='aguardando') o.ag++; else {o.resp++; if(r.t!=null){o.tSum+=r.t;o.tN++;}}
+  for(const r of rows){const t=tot(r.x);const v=(r.x.vendedorEmail||vend(r.x)||'sem-nome').toLowerCase();const cx=itens(r.x).reduce((s2,i)=>s2+(Number(i.cx)||0),0);
+    if(!pv.has(v)) pv.set(v,{nome:vend(r.x)||r.x.vendedorEmail||'Sem nome',email:r.x.vendedorEmail||'',...z()}); const a=pv.get(v);
+    for(const o of [g,a]){o.env++;o.kg+=t.kg;o.rs+=t.rs;o.cx+=cx;
+      if(r.st==='aguardando') o.ag++; else {o.resp++; if(r.t!=null) addT(o,r.t);}
       if(r.st==='aprovada') o.apr++; if(r.st==='contra'||r.st==='aceita') o.contra++; if(r.st==='aceita') o.aceita++; if(r.st==='recusada') o.rec++; if(r.st==='info') o.info++;}
     if(r.r&&r.r.por){const k=r.r.por; if(!pa.has(k)) pa.set(k,{nome:r.r.porNome||'Sem nome',...z()}); const b=pa.get(k);
-      b.resp++; if(r.t!=null){b.tSum+=r.t;b.tN++;} if(r.r.dec==='aprovada') b.apr++; if(r.r.dec==='contra') b.contra++; if(r.st==='aceita') b.aceita++; if(r.r.dec==='recusada') b.rec++; if(r.r.dec==='info') b.info++;}}
+      b.resp++; if(r.t!=null) addT(b,r.t); if(r.r.dec==='aprovada') b.apr++; if(r.r.dec==='contra') b.contra++; if(r.st==='aceita') b.aceita++; if(r.r.dec==='recusada') b.rec++; if(r.r.dec==='info') b.info++;}}
   const wait=rows.filter(r=>r.st==='aguardando'); const oldest=wait.length?Math.max(...wait.map(r=>now-new Date(r.x.enviadaEm))):null;
-  return {g,oldest,pv:[...pv.entries()].map(([nome,o])=>({nome,...o})).sort((a,b)=>b.env-a.env||a.nome.localeCompare(b.nome)),pa:[...pa.values()].sort((a,b)=>b.resp-a.resp||a.nome.localeCompare(b.nome))};}
+  return {g,oldest,pv:[...pv.values()].sort((a,b)=>b.env-a.env||a.nome.localeCompare(b.nome)),pa:[...pa.values()].sort((a,b)=>b.resp-a.resp||a.nome.localeCompare(b.nome))};}
 const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
 const tmed=o=>o.tN?fDur(o.tSum/o.tN):'—';
 function periodoTxt(){const f=d=>d.split('-').reverse().join('/');
@@ -844,7 +845,7 @@ function periodoTxt(){const f=d=>d.split('-').reverse().join('/');
 function renderHist(m){
   const rows=histRows(); const now=Date.now(); const I=indicadores(rows); const g=I.g;
   const apNome=S.fAp==='__sem'?'Ainda sem retorno':S.fAp?((aprovadoresVistos().find(a=>a.id===S.fAp)||{}).nome||''):'';
-  m.innerHTML=`<section class="card"><div class="phead"><div><div class="eyebrow">${esc(periodoTxt())}${apNome?' · '+esc(apNome):''}</div><h2>Resumo e histórico</h2></div><div class="actions"><button class="btn small" id="btnCsvInd">Baixar indicadores (.csv)</button><button class="btn small" id="btnCsv">Baixar planilha (.csv)</button></div></div>
+  m.innerHTML=`<section class="card"><div class="phead"><div><div class="eyebrow">${esc(periodoTxt())}${apNome?' · '+esc(apNome):''}</div><h2>Resumo e histórico</h2></div><div class="actions"><button class="btn small primary" id="btnXlsx">Baixar Excel (.xlsx)</button><button class="btn small" id="btnCsv">Baixar planilha (.csv)</button></div></div>
     <div class="hfil">${filtrosHtml('h')}</div>
     <div class="summary s8">
       <div><div class="k">Recebidas</div><div class="v num">${g.env} <small>${fmt(g.kg)} kg</small></div></div>
@@ -910,6 +911,41 @@ function exportIndicadores(){const rows=histRows();const I=indicadores(rows);con
     ['Por aprovador'],['Aprovador','Respondidas','Aprovadas','Contraproposta','Aceitas','Recusadas','Faltam informações','Tempo médio (h)'],
     ...I.pa.map(o=>[o.nome,o.resp,o.apr,o.contra,o.aceita,o.rec,o.info,h(o)])];
   baixarCsv(L,'Indicadores-Propostas.csv');}
+function loadXlsx(){if(window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    sc.onload=()=>window.XLSX?res(window.XLSX):rej(new Error('xlsx'));sc.onerror=()=>rej(new Error('xlsx'));document.head.appendChild(sc);});}
+function planilhasExcel(){
+  const rows=histRows(); const I=indicadores(rows); const g=I.g;
+  const H=ms=>ms==null?null:Math.round(ms/36e5*100)/100; const R2=v=>Math.round((Number(v)||0)*100)/100;
+  const taxa=o=>o.resp?R2((o.apr+o.aceita)/o.resp*100):null; const dt=v=>v?new Date(v):null;
+  const de=S.fDe?new Date(S.fDe+'T00:00:00'):(rows.length?new Date(Math.min(...rows.map(r=>new Date(r.x.enviadaEm)))):null);
+  const ate=S.fAte?new Date(S.fAte+'T23:59:59'):(rows.length?new Date(Math.max(...rows.map(r=>new Date(r.x.enviadaEm)))):null);
+  const apNome=S.fAp==='__sem'?'Ainda sem retorno':S.fAp?((aprovadoresVistos().find(a=>a.id===S.fAp)||{}).nome||''):'Todos';
+  const resumo=[['Gerado em','Período início','Período fim','Filtro aprovador','Recebidas','Aguardando','Respondidas','Aprovadas','Com contraproposta','Contraproposta aceita','Recusadas','Faltam informações','Taxa de aprovação (%)','Tempo médio de retorno (h)','Tempo mínimo (h)','Tempo máximo (h)','Kg','Caixas','Total pedido (R$)'],
+    [new Date(),de,ate,apNome,g.env,g.ag,g.resp,g.apr,g.contra,g.aceita,g.rec,g.info,taxa(g),H(g.tN?g.tSum/g.tN:null),H(g.tMin),H(g.tMax),R2(g.kg),g.cx,R2(g.rs)]];
+  const vend_=[['Vendedor','E-mail','Propostas enviadas','Aguardando','Respondidas','Aprovadas','Com contraproposta','Contraproposta aceita','Recusadas','Faltam informações','Taxa de aprovação (%)','Tempo médio de retorno (h)','Tempo mínimo (h)','Tempo máximo (h)','Kg','Caixas','Total pedido (R$)'],
+    ...I.pv.map(o=>[o.nome,o.email,o.env,o.ag,o.resp,o.apr,o.contra,o.aceita,o.rec,o.info,taxa(o),H(o.tN?o.tSum/o.tN:null),H(o.tMin),H(o.tMax),R2(o.kg),o.cx,R2(o.rs)])];
+  const apr_=[['Aprovador (supervisor)','Propostas respondidas','Aprovadas','Contrapropostas enviadas','Contrapropostas aceitas','Recusadas','Faltam informações','Tempo médio de resposta (h)','Tempo mínimo (h)','Tempo máximo (h)'],
+    ...I.pa.map(o=>[o.nome,o.resp,o.apr,o.contra,o.aceita,o.rec,o.info,H(o.tN?o.tSum/o.tN:null),H(o.tMin),H(o.tMax)])];
+  const prop_=[['Proposta','Versão','Vendedor','E-mail do vendedor','Supervisor escolhido','Cliente','Código do cliente','CNPJ/CPF','Enviada em','Status','Respondido por','Retorno em','Tempo de resposta (h)','Itens','Kg','Caixas','Total pedido (R$)','Total da contraproposta (R$)','Desconto pedido (%)','Desconto liberado (%)','Comentário do retorno'],
+    ...rows.map(r=>{const t=tot(r.x);const c=r.r;const cx=itens(r.x).reduce((s2,i)=>s2+(Number(i.cx)||0),0);
+      return [r.x.n,r.x.versao||1,vend(r.x),r.x.vendedorEmail||'',r.x.supervisor||'',r.x.cliente||'',r.x.cod||'',fmtDoc(r.x.doc),dt(r.x.enviadaEm),ST[r.st]||r.st,c?c.porNome||'':'',c?dt(c.em):null,H(r.t),t.n,R2(t.kg),cx,R2(t.rs),c&&c.dec==='contra'?R2(totContra(r.x,c)):null,Number(r.x.desc)||0,c&&c.cd!=null?Number(c.cd):null,c?c.com||'':''];})];
+  const it_=[['Proposta','Versão','Vendedor','Cliente','Enviada em','Status','Produto','Kg','Caixas','Preço (R$/kg)','Total do item (R$)','Contraproposta (R$/kg)','Respondido por'],
+    ...rows.flatMap(r=>itens(r.x).map((i,k)=>{const c=r.r;return [r.x.n,r.x.versao||1,vend(r.x),r.x.cliente||'',dt(r.x.enviadaEm),ST[r.st]||r.st,i.produto,Number(i.qtd)||0,i.cx!=null&&i.cx!==''?Number(i.cx):null,Number(i.valor)||0,R2((Number(i.qtd)||0)*(Number(i.valor)||0)),c&&c.dec==='contra'&&c.cvi&&c.cvi[k]!=null?c.cvi[k]:null,c?c.porNome||'':''];}))];
+  return [['Resumo',resumo],['Por vendedor',vend_],['Por aprovador',apr_],['Propostas',prop_],['Itens',it_]];
+}
+async function exportExcel(){
+  let X; try{toast('Gerando o Excel…');X=await loadXlsx();}catch(e){toast('Não foi possível carregar o gerador de Excel. Confira a internet e tente de novo.');return;}
+  const wb=X.utils.book_new();
+  for(const [nome,aoa] of planilhasExcel()){
+    const ws=X.utils.aoa_to_sheet(aoa,{cellDates:true,dateNF:'dd/mm/yyyy hh:mm'});
+    ws['!cols']=aoa[0].map((h,c)=>({wch:Math.min(40,Math.max(String(h).length+2,...aoa.slice(1).map(r=>r[c] instanceof Date?16:String(r[c]??'').length+2)))}));
+    if(ws['!ref']) ws['!autofilter']={ref:ws['!ref']};
+    X.utils.book_append_sheet(wb,ws,nome);}
+  const hoje=new Date();const p=n=>String(n).padStart(2,'0');
+  X.writeFile(wb,`Indicadores-Propostas-${hoje.getFullYear()}-${p(hoje.getMonth()+1)}-${p(hoje.getDate())}.xlsx`,{compression:true});
+  toast('Excel baixado.');
+}
 function exportCsv(){
   const q=v=>{const s=String(v??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const d=v=>v==null?'':String(Math.round(v*1000)/1000).replace('.',',');
@@ -971,6 +1007,7 @@ document.addEventListener('click',async ev=>{
     case 'btnCancelResp': S.respEdit=false;S.rd=null;S.rdErr=null;render(); break;
     case 'btnCsv': exportCsv(); break;
     case 'btnCsvInd': exportIndicadores(); break;
+    case 'btnXlsx': exportExcel(); break;
     case 'btnLimparFiltros': S.fAp='';S.fDe='';S.fAte='';render(); break;
     case 'btnSup': saveSup($('#supTxt').value); break;
     case 'btnAv': saveAv($('#avTxt').value); break;
