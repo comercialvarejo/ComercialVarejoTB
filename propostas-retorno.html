@@ -196,6 +196,20 @@ dd.big{font-family:var(--f-display);font-size:22px!important;line-height:1.15}
 .summary > div:last-child{border-right:0}
 .summary .k{font-size:12px;color:var(--ink-3);font-weight:600;letter-spacing:.03em}
 .summary .v{font-family:var(--f-display);font-size:24px;font-weight:700;line-height:1.15}
+.filtros{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;margin-top:8px}
+.filtros label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);min-width:0}
+.filtros .fa{grid-column:1/-1}
+.filtros select,.filtros input{width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 8px;font:inherit;font-size:13px;text-transform:none;letter-spacing:0}
+.filtros .fx{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--ink-3)}
+.hfil{padding:12px 20px;border-top:1px solid var(--line-2)}
+.hfil .filtros{grid-template-columns:2fr 1fr 1fr auto;align-items:end;margin-top:0}
+.hfil .filtros .fa{grid-column:auto}.hfil .filtros .fx{grid-column:auto}
+@media (max-width:640px){.hfil .filtros{grid-template-columns:1fr 1fr}.hfil .filtros .fa,.hfil .filtros .fx{grid-column:1/-1}}
+.summary.s8{grid-template-columns:repeat(4,minmax(0,1fr))}
+.summary.s8 > div{border-bottom:1px solid var(--line-2)}
+.summary.s8 > div:nth-child(4n){border-right:0}
+@media (max-width:640px){.summary.s8{grid-template-columns:repeat(2,minmax(0,1fr))}.summary.s8 > div:nth-child(2n){border-right:0}}
+.ind h3{margin:0;padding:14px 20px 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .summary .v small{font-family:var(--f-body);font-size:13px;font-weight:500;color:var(--ink-3)}
 
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -366,7 +380,7 @@ import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, writeBatch
 
 const DEC={aprovada:'Aprovada',recusada:'Recusada',contra:'Contraproposta',info:'Pedir mais informações'};
 const ST={aguardando:'Aguardando retorno',aprovada:'Aprovada',recusada:'Recusada',contra:'Contraproposta',aceita:'Contraproposta aceita',info:'Faltam informações'};
-const S={auth:null,db:null,user:null,uid:null,admin:false,mode:'solicitar',L:{},cfg:{supervisores:[],avisos:[]},loaded:false,unsub:[],
+const S={fAp:'',fDe:'',fAte:'',auth:null,db:null,user:null,uid:null,admin:false,mode:'solicitar',L:{},cfg:{supervisores:[],avisos:[]},loaded:false,unsub:[],
   sel:null,filtro:'aguardando',q:'',form:null,formErr:{},editId:null,rd:null,rdErr:null,respEdit:false,copy:null,busy:false,
   seen:null,seenR:null,som:false,notif:false,audio:null,supTxt:null,avTxt:null,authTab:'entrar',authMsg:null,authErr:null,authBusy:false};
 
@@ -641,12 +655,13 @@ function renderSide(){
       <button class="btn small danger" id="btnLimparMinhas" ${nLimp&&!S.busy?'':'disabled'}>Limpar minhas propostas${nLimp?' ('+nLimp+')':''}</button>
       <span>Tira da sua lista as propostas já respondidas. As que aguardam retorno continuam.</span></div>`;
   }else{
-    const all=recebidas(); const nLimpA=all.filter(i=>i.st!=='aguardando').length; const c={aguardando:0,respondidas:0,todas:all.length}; for(const i of all) i.st==='aguardando'?c.aguardando++:c.respondidas++;
+    const all0=recebidas(); const nLimpA=all0.filter(i=>i.st!=='aguardando').length; const all=all0.filter(i=>passaFiltro(i.x)); const c={aguardando:0,respondidas:0,todas:all.length}; for(const i of all) i.st==='aguardando'?c.aguardando++:c.respondidas++;
     let items=all.filter(i=>S.filtro==='todas'||(S.filtro==='aguardando'?i.st==='aguardando':i.st!=='aguardando'));
     if(S.q){const q=norm(S.q);items=items.filter(i=>norm(i.x.cliente+' '+vend(i.x)+' '+(i.x.vendedorEmail||'')+' '+itens(i.x).map(z=>z.produto).join(' ')+' '+(i.x.supervisor||'')+' '+i.x.doc+' '+(i.x.cod||'')).includes(q));}
     sortItems(items);
     h+=`<div class="side-head"><h2>Propostas recebidas</h2></div>
     <div class="toolbar"><div class="search"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6"/></svg><input id="q" type="search" placeholder="Cliente, vendedor, produto, CNPJ" value="${esc(S.q)}" autocomplete="off"></div></div>
+    ${filtrosHtml('s')}
     <div class="chips" role="group" aria-label="Filtro">${[['aguardando','Aguardando'],['respondidas','Respondidas'],['todas','Todas']].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${S.filtro===k}">${l} <span class="num">${c[k]}</span></button>`).join('')}</div>
     <div class="plist">${items.map(i=>itemBtn(i,true)).join('')||`<div class="empty-side">${S.filtro==='aguardando'?'Nenhuma proposta aguardando retorno.':'Nada encontrado.'}</div>`}</div>
     <button class="btn" data-sel="__acessos" style="justify-content:flex-start;${S.sel==='__acessos'?'border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)':''}">Representantes <span class="num" style="color:var(--ink-3);font-weight:500">${(S.acessos||[]).filter(a=>a.ativo).length}</span></button>
@@ -795,20 +810,58 @@ function renderDetail(m,id,adm){
   }
   m.innerHTML=h;
 }
-function histRows(){return list(false).sort((a,b)=>new Date(b.x.enviadaEm)-new Date(a.x.enviadaEm)).map(i=>{const c=cur(i.x);return {...i,r:c,t:c?new Date(c.em)-new Date(i.x.enviadaEm):null};});}
-function renderHist(m){
-  const rows=histRows(); const now=Date.now(); const d30=now-30*864e5;
-  const rec=rows.filter(r=>new Date(r.x.enviadaEm)>=d30); const done=rec.filter(r=>r.r);
-  const tm=done.length?done.reduce((a,r)=>a+r.t,0)/done.length:null;
-  const ok=done.filter(r=>r.st==='aprovada'||r.st==='aceita').length;
+function filtroAtivo(){return !!(S.fAp||S.fDe||S.fAte);}
+function aprovadoresVistos(){const m=new Map();for(const x of Object.values(S.L)){for(const r of [...(x.anteriores||[]),x.resposta]){if(r&&r.por&&!m.has(r.por)) m.set(r.por,r.porNome||'Sem nome');}}
+  return [...m.entries()].map(([id,nome])=>({id,nome})).sort((a,b)=>a.nome.localeCompare(b.nome));}
+function passaFiltro(x){
+  if(S.fDe||S.fAte){const t=new Date(x.enviadaEm).getTime();
+    if(S.fDe&&t<new Date(S.fDe+'T00:00:00').getTime()) return false;
+    if(S.fAte&&t>new Date(S.fAte+'T23:59:59.999').getTime()) return false;}
+  if(S.fAp){const r=x.resposta; if(S.fAp==='__sem') return !r; if(!r||r.por!==S.fAp) return false;}
+  return true;}
+function filtrosHtml(pre){const ap=aprovadoresVistos();
+  return `<div class="filtros"><label class="fa">Aprovador<select data-fl="fAp" id="${pre}-ap"><option value="">Todos os aprovadores</option>${ap.map(a=>`<option value="${esc(a.id)}" ${S.fAp===a.id?'selected':''}>${esc(a.nome)}</option>`).join('')}<option value="__sem" ${S.fAp==='__sem'?'selected':''}>Ainda sem retorno</option></select></label>
+  <label>Enviada de<input type="date" data-fl="fDe" id="${pre}-de" value="${esc(S.fDe)}"></label><label>até<input type="date" data-fl="fAte" id="${pre}-ate" value="${esc(S.fAte)}"></label>
+  <div class="fx">${[['hoje','Hoje'],['7','7 dias'],['30','30 dias']].map(([k,l])=>`<button class="btn small ghost" data-per="${k}">${l}</button>`).join('')}${filtroAtivo()?'<button class="btn small" id="btnLimparFiltros">Limpar filtros</button>':''}</div></div>`;}
+function histRows(){return list(false).filter(i=>passaFiltro(i.x)).sort((a,b)=>new Date(b.x.enviadaEm)-new Date(a.x.enviadaEm)).map(i=>{const c=cur(i.x);return {...i,r:c,t:c?new Date(c.em)-new Date(i.x.enviadaEm):null};});}
+function indicadores(rows){
+  const now=Date.now(); const z=()=>({env:0,ag:0,apr:0,contra:0,aceita:0,rec:0,info:0,resp:0,tSum:0,tN:0,kg:0,rs:0});
+  const g=z(); const pv=new Map(), pa=new Map();
+  for(const r of rows){const t=tot(r.x);const v=vend(r.x)||r.x.vendedorEmail||'Sem nome';
+    if(!pv.has(v)) pv.set(v,z()); const a=pv.get(v);
+    for(const o of [g,a]){o.env++;o.kg+=t.kg;o.rs+=t.rs;
+      if(r.st==='aguardando') o.ag++; else {o.resp++; if(r.t!=null){o.tSum+=r.t;o.tN++;}}
+      if(r.st==='aprovada') o.apr++; if(r.st==='contra'||r.st==='aceita') o.contra++; if(r.st==='aceita') o.aceita++; if(r.st==='recusada') o.rec++; if(r.st==='info') o.info++;}
+    if(r.r&&r.r.por){const k=r.r.por; if(!pa.has(k)) pa.set(k,{nome:r.r.porNome||'Sem nome',...z()}); const b=pa.get(k);
+      b.resp++; if(r.t!=null){b.tSum+=r.t;b.tN++;} if(r.r.dec==='aprovada') b.apr++; if(r.r.dec==='contra') b.contra++; if(r.st==='aceita') b.aceita++; if(r.r.dec==='recusada') b.rec++; if(r.r.dec==='info') b.info++;}}
   const wait=rows.filter(r=>r.st==='aguardando'); const oldest=wait.length?Math.max(...wait.map(r=>now-new Date(r.x.enviadaEm))):null;
-  m.innerHTML=`<section class="card"><div class="phead"><div><div class="eyebrow">Últimos 30 dias</div><h2>Resumo e histórico</h2></div><div class="actions"><button class="btn small" id="btnCsv">Baixar planilha (.csv)</button></div></div>
-    <div class="summary">
-      <div><div class="k">Aguardando</div><div class="v num">${wait.length} <small>${oldest!=null?'mais antiga há '+fDur(oldest):''}</small></div></div>
-      <div><div class="k">Tempo médio de retorno</div><div class="v num">${tm!=null?fDur(tm):'—'}</div></div>
-      <div><div class="k">Aprovadas</div><div class="v num">${done.length?Math.round(ok/done.length*100)+'%':'—'} <small>${ok} de ${done.length}</small></div></div>
-      <div><div class="k">Recebidas</div><div class="v num">${rec.length} <small>propostas</small></div></div>
+  return {g,oldest,pv:[...pv.entries()].map(([nome,o])=>({nome,...o})).sort((a,b)=>b.env-a.env||a.nome.localeCompare(b.nome)),pa:[...pa.values()].sort((a,b)=>b.resp-a.resp||a.nome.localeCompare(b.nome))};}
+const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+const tmed=o=>o.tN?fDur(o.tSum/o.tN):'—';
+function periodoTxt(){const f=d=>d.split('-').reverse().join('/');
+  if(S.fDe&&S.fAte) return S.fDe===S.fAte?'Enviadas em '+f(S.fDe):'De '+f(S.fDe)+' até '+f(S.fAte);
+  if(S.fDe) return 'A partir de '+f(S.fDe); if(S.fAte) return 'Até '+f(S.fAte); return 'Todas as propostas no painel';}
+function renderHist(m){
+  const rows=histRows(); const now=Date.now(); const I=indicadores(rows); const g=I.g;
+  const apNome=S.fAp==='__sem'?'Ainda sem retorno':S.fAp?((aprovadoresVistos().find(a=>a.id===S.fAp)||{}).nome||''):'';
+  m.innerHTML=`<section class="card"><div class="phead"><div><div class="eyebrow">${esc(periodoTxt())}${apNome?' · '+esc(apNome):''}</div><h2>Resumo e histórico</h2></div><div class="actions"><button class="btn small" id="btnCsvInd">Baixar indicadores (.csv)</button><button class="btn small" id="btnCsv">Baixar planilha (.csv)</button></div></div>
+    <div class="hfil">${filtrosHtml('h')}</div>
+    <div class="summary s8">
+      <div><div class="k">Recebidas</div><div class="v num">${g.env} <small>${fmt(g.kg)} kg</small></div></div>
+      <div><div class="k">Aguardando</div><div class="v num">${g.ag} <small>${I.oldest!=null?'mais antiga há '+fDur(I.oldest):''}</small></div></div>
+      <div><div class="k">Tempo médio de retorno</div><div class="v num">${tmed(g)}</div></div>
+      <div><div class="k">Valor total pedido</div><div class="v num" style="font-size:20px">${brl(g.rs)}</div></div>
+      <div><div class="k">Aprovadas</div><div class="v num">${g.apr} <small>${pct(g.apr,g.resp)} das respondidas</small></div></div>
+      <div><div class="k">Com contraproposta</div><div class="v num">${g.contra} <small>${pct(g.contra,g.resp)}</small></div></div>
+      <div><div class="k">Contraproposta aceita</div><div class="v num">${g.aceita} <small>${pct(g.aceita,g.contra)} das contras</small></div></div>
+      <div><div class="k">Recusadas / faltam info</div><div class="v num">${g.rec} <small>/ ${g.info}</small></div></div>
     </div></section>
+  <section class="card ind"><h3>Por vendedor</h3><div class="tbl-wrap"><table class="hist"><thead><tr><th>Vendedor</th><th class="n">Enviadas</th><th class="n">Aguardando</th><th class="n">Aprovadas</th><th class="n">Contraproposta</th><th class="n">Aceitas</th><th class="n">Recusadas</th><th class="n">Taxa de aprovação</th><th class="n">Tempo médio</th><th class="n">Kg</th><th class="n">Total</th></tr></thead><tbody>
+  ${I.pv.map(o=>`<tr><td><b>${esc(o.nome)}</b></td><td class="n">${o.env}</td><td class="n">${o.ag}</td><td class="n">${o.apr}</td><td class="n">${o.contra}</td><td class="n">${o.aceita}</td><td class="n">${o.rec}</td><td class="n">${pct(o.apr+o.aceita,o.resp)}</td><td class="n">${tmed(o)}</td><td class="n">${fmt(o.kg)}</td><td class="n">${brl(o.rs)}</td></tr>`).join('')||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--ink-3)">Nenhuma proposta neste filtro.</td></tr>'}
+  </tbody></table></div>
+  <h3>Por aprovador</h3><div class="tbl-wrap"><table class="hist"><thead><tr><th>Aprovador</th><th class="n">Respondidas</th><th class="n">Aprovadas</th><th class="n">Contraproposta</th><th class="n">Aceitas</th><th class="n">Recusadas</th><th class="n">Faltam info</th><th class="n">Tempo médio</th></tr></thead><tbody>
+  ${I.pa.map(o=>`<tr><td><b>${esc(o.nome)}</b></td><td class="n">${o.resp}</td><td class="n">${o.apr}</td><td class="n">${o.contra}</td><td class="n">${o.aceita}</td><td class="n">${o.rec}</td><td class="n">${o.info}</td><td class="n">${tmed(o)}</td></tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink-3)">Nenhum retorno neste filtro.</td></tr>'}
+  </tbody></table></div><p class="muted" style="padding:6px 20px 14px;margin:0;font-size:12px">Taxa de aprovação = aprovadas + contrapropostas aceitas, dividido pelas respondidas. Tempo médio = do envio da versão atual até o retorno.</p></section>
   <section class="card"><div class="tbl-wrap"><table class="hist"><thead><tr><th>Cliente</th><th>Vendedor</th><th class="n">Itens</th><th class="n">Kg</th><th class="n">Total</th><th class="n">Desc.</th><th>Enviada</th><th>Status</th><th class="n">Retorno em</th><th>Respondido por</th></tr></thead><tbody>
   ${rows.map(r=>{const t=tot(r.x);return `<tr class="hrow" data-sel="${esc(r.id)}"><td><b>${esc(r.x.cliente)}</b><span class="sub2">Proposta ${r.x.n}${(r.x.versao||1)>1?' · v'+r.x.versao:''}</span></td><td>${esc(vend(r.x))}<span class="sub2">${esc(r.x.supervisor||'')}</span></td><td class="n">${t.n}</td><td class="n">${fmt(t.kg)}</td><td class="n">${brl(t.rs)}<span class="sub2">${pkg(t.med)}</span></td><td class="n">${r.x.desc?fmt(r.x.desc)+'%':'—'}</td><td class="num">${fDT(r.x.enviadaEm)}</td><td><span class="pill st-${r.st}">${esc(ST[r.st])}</span></td><td class="n">${r.t!=null?fDur(r.t):`<span style="color:var(--warn)">há ${fDur(now-new Date(r.x.enviadaEm))}</span>`}</td><td>${r.r?esc(r.r.porNome||''):'—'}</td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--ink-3)">Nenhuma proposta ainda.</td></tr>'}
   </tbody></table></div></section>
@@ -816,7 +869,7 @@ function renderHist(m){
   <div class="sec" style="border-top:0;padding-top:4px"><div class="field"><label for="supTxt">Nomes que aparecem para o vendedor escolher, separados por vírgula</label><input id="supTxt" value="${esc(S.supTxt??S.cfg.supervisores.join(', '))}" placeholder="Ex.: Paulo Rizzato, Leonardo" autocomplete="off"></div><p style="margin:10px 0 0"><button class="btn small primary" id="btnSup">Salvar supervisores</button></p></div>
   <div class="sec"><div class="field"><label for="avTxt">E-mails que recebem aviso de proposta nova e de contraproposta aceita, separados por vírgula</label><input id="avTxt" value="${esc(S.avTxt??S.cfg.avisos.join(', '))}" placeholder="Ex.: paulo.neto@gtf.com.br, miguel.trindade@gtf.com.br" autocomplete="off" inputmode="email"></div><p style="margin:10px 0 0"><button class="btn small primary" id="btnAv">Salvar e-mails de aviso</button> <span class="muted" style="margin-left:8px">${avisoOn()?'Avisos por e-mail ligados.':'Avisos por e-mail ainda desligados no CONFIG.'}</span></p></div></section>
   <section class="card"><div class="phead" style="padding-bottom:4px"><div><div class="eyebrow">Só aos domingos</div><h2 style="font-size:22px">Limpeza semanal</h2></div></div>
-  <div class="sec" style="border-top:0;padding-top:4px"><p class="muted">Exclui de vez as propostas de todos os vendedores e representantes (${rows.length} hoje). Baixe a planilha antes, porque não dá para desfazer.</p><p style="margin:10px 0 0"><button class="btn small danger" id="btnLimparTodas" ${rows.length&&domingoSP()&&!S.busy?'':'disabled'}>Limpar propostas de todos</button> ${domingoSP()?'':'<span class="muted" style="margin-left:8px">Disponível só no domingo.</span>'}</p></div></section>`;
+  <div class="sec" style="border-top:0;padding-top:4px"><p class="muted">Exclui de vez as propostas de todos os vendedores e representantes (${Object.keys(S.L).length} hoje). Baixe a planilha antes, porque não dá para desfazer.</p><p style="margin:10px 0 0"><button class="btn small danger" id="btnLimparTodas" ${Object.keys(S.L).length&&domingoSP()&&!S.busy?'':'disabled'}>Limpar propostas de todos</button> ${domingoSP()?'':'<span class="muted" style="margin-left:8px">Disponível só no domingo.</span>'}</p></div></section>`;
 }
 function convite(email){return `Olá! Seu acesso ao painel de propostas da Gtf está liberado.\n\n1. Abra ${location.origin+location.pathname}\n2. Clique em "Criar acesso" e use o e-mail ${email}\n3. Crie uma senha e confirme pelo link que chega no seu e-mail\n\nDepois é só entrar com esse e-mail e senha para enviar suas propostas.`;}
 function renderAcessos(m){
@@ -844,6 +897,19 @@ async function liberar(){
 }
 async function alternar(id){const a=(S.acessos||[]).find(z=>z.id===id);if(!a) return;
   try{await updateDoc(doc(S.db,'acessos',id),{ativo:!a.ativo});toast(a.ativo?'Acesso bloqueado. As propostas antigas continuam no histórico.':'Acesso liberado de novo.');}catch(e){handleErr(e);}}
+function baixarCsv(lines,nome){const q=v=>{const s=String(v??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const blob=new Blob(['\ufeff'+lines.map(l=>l.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
+function exportIndicadores(){const rows=histRows();const I=indicadores(rows);const g=I.g;
+  const d=v=>String(Math.round(v*100)/100).replace('.',',');const h=o=>o.tN?d(o.tSum/o.tN/36e5):'';
+  const L=[['Indicadores de propostas'],['Período',periodoTxt()],[],
+    ['Recebidas','Aguardando','Respondidas','Aprovadas','Com contraproposta','Contraproposta aceita','Recusadas','Faltam informações','Taxa de aprovação (%)','Tempo médio de retorno (h)','Kg','Total (R$)'],
+    [g.env,g.ag,g.resp,g.apr,g.contra,g.aceita,g.rec,g.info,g.resp?d((g.apr+g.aceita)/g.resp*100):'',h(g),d(g.kg),d(g.rs)],[],
+    ['Por vendedor'],['Vendedor','Enviadas','Aguardando','Aprovadas','Contraproposta','Aceitas','Recusadas','Faltam informações','Taxa de aprovação (%)','Tempo médio (h)','Kg','Total (R$)'],
+    ...I.pv.map(o=>[o.nome,o.env,o.ag,o.apr,o.contra,o.aceita,o.rec,o.info,o.resp?d((o.apr+o.aceita)/o.resp*100):'',h(o),d(o.kg),d(o.rs)]),[],
+    ['Por aprovador'],['Aprovador','Respondidas','Aprovadas','Contraproposta','Aceitas','Recusadas','Faltam informações','Tempo médio (h)'],
+    ...I.pa.map(o=>[o.nome,o.resp,o.apr,o.contra,o.aceita,o.rec,o.info,h(o)])];
+  baixarCsv(L,'Indicadores-Propostas.csv');}
 function exportCsv(){
   const q=v=>{const s=String(v??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const d=v=>v==null?'':String(Math.round(v*1000)/1000).replace('.',',');
@@ -871,6 +937,10 @@ document.addEventListener('keydown',ev=>{const el=ev.target;if(ev.key==='Enter'&
   else if(ev.key==='Enter'&&el.dataset&&el.dataset.ik==='cx'&&S.form&&+el.dataset.it===S.form.itens.length-1){ev.preventDefault();addItem();}});
 document.addEventListener('submit',ev=>{if(ev.target.id==='aform'){ev.preventDefault();entrarEmail();}});
 document.addEventListener('click',async ev=>{
+  const per=ev.target.closest&&ev.target.closest('[data-per]');
+  if(per){const hoje=new Date();const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const k=per.dataset.per;const ini=new Date(hoje);if(k!=='hoje') ini.setDate(ini.getDate()-(+k-1));
+    S.fDe=iso(ini);S.fAte=iso(hoje);render();return;}
   const t=ev.target.closest('button,[data-sel]'); if(!t) return;
   if(t.dataset.at){S.authTab=t.dataset.at;S.authErr=null;S.authMsg=null;renderAuth();return;}
   if(t.dataset.mode){S.mode=t.dataset.mode;store('mode',S.mode);S.sel=null;S.rd=null;S.respEdit=false;S.copy=null;render(true);return;}
@@ -900,6 +970,8 @@ document.addEventListener('click',async ev=>{
     case 'btnAlterar': S.respEdit=true;S.rd=null;render(); break;
     case 'btnCancelResp': S.respEdit=false;S.rd=null;S.rdErr=null;render(); break;
     case 'btnCsv': exportCsv(); break;
+    case 'btnCsvInd': exportIndicadores(); break;
+    case 'btnLimparFiltros': S.fAp='';S.fDe='';S.fAte='';render(); break;
     case 'btnSup': saveSup($('#supTxt').value); break;
     case 'btnAv': saveAv($('#avTxt').value); break;
     case 'btnLimparMinhas': limparMinhas(); break;
@@ -928,6 +1000,7 @@ document.addEventListener('change',async ev=>{
   const el=ev.target;
   if(el.id==='som'){S.som=el.checked;store('som',S.som?'1':'0');if(S.som){beep();toast('Som ativado.');}return;}
   if(el.id==='notif'){if(el.checked){const p=await Notification.requestPermission();S.notif=p==='granted';if(!S.notif){el.checked=false;toast('O navegador bloqueou os avisos. Libere nas configurações do site.');}}else S.notif=false;store('notif',S.notif?'1':'0');return;}
+  if(el.dataset&&el.dataset.fl){S[el.dataset.fl]=el.value;render();return;}
   if(el.tagName==='SELECT'&&el.dataset.f&&S.form){S.form[el.dataset.f]=el.value;if(S.formErr[el.dataset.f]){delete S.formErr[el.dataset.f];render();}}
 });
 
