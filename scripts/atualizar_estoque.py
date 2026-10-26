@@ -3294,6 +3294,20 @@ def garantir_css_tema_claro(html):
     return html.replace('</head>', CSS_TEMA_CLARO_PRECOS + '\n</head>', 1)
 
 
+# ── Selo "cx/pallet" nos cards (Terra Boa e Apucarana) ──
+# A lista de pallets e o código do selo ficam em pallets.js (raiz do
+# repositório). O robô só garante que as duas páginas carregam esse arquivo.
+TAG_PALLETS = '<script src="./pallets.js" defer></script>'
+
+
+def garantir_script_pallets(html):
+    if 'pallets.js' in html or '</body>' not in html:
+        return html
+    if not os.path.exists("pallets.js"):
+        return html
+    return html.replace('</body>', TAG_PALLETS + '\n</body>', 1)
+
+
 def corrigir_menu_em_todas_as_paginas():
     import glob
     for caminho in sorted(glob.glob("*.html")):
@@ -3301,6 +3315,8 @@ def corrigir_menu_em_todas_as_paginas():
             with open(caminho, encoding="utf-8") as f:
                 atual = f.read()
             novo = garantir_menu_estoques(atual)
+            if caminho.endswith('index.html') or caminho.endswith('apucarana.html'):
+                novo = garantir_script_pallets(novo)
             if caminho.endswith('tabela-precos.html'):
                 novo = garantir_css_tema_claro(novo)
                 if 'id="ajuste-tema-claro"' in novo:
