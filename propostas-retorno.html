@@ -223,7 +223,7 @@ table.hist tr.hrow:hover td{background:var(--surface-2)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ihead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .ihead .hint{font-size:12px;color:var(--ink-3)}
-.icols,.irow{display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 110px 34px;gap:8px 10px;align-items:start}
+.icols,.irow{display:grid;grid-template-columns:minmax(0,1fr) 120px 160px 100px 110px 34px;gap:8px 10px;align-items:start}
 .icols{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:0 0 6px}
 .icols .r,.itot{text-align:right}
 .irow{padding:7px 0;border-top:1px solid var(--line-2)}
@@ -231,7 +231,7 @@ table.hist tr.hrow:hover td{background:var(--surface-2)}
 .irm{font-size:18px;line-height:1;padding:6px 8px}
 .iadd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-top:10px}
 .iadd .hint{font-size:12px;color:var(--ink-3)}
-@media (max-width:680px){.icols{display:none}.irow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px;grid-template-areas:"p p x" "q v v" "t t t"}.irow .ip{grid-area:p}.irow .iq{grid-area:q}.irow .iv{grid-area:v}.irow .itot{grid-area:t;padding-top:0}.irow .irm{grid-area:x}}
+@media (max-width:680px){.icols{display:none}.irow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px;grid-template-areas:"p p x" "q v v" "c t t"}.irow .ip{grid-area:p}.irow .iq{grid-area:q}.irow .iv{grid-area:v}.irow .ic{grid-area:c}.irow .itot{grid-area:t;padding-top:0}.irow .irm{grid-area:x}}
 .affix input{width:100%;min-width:0;padding:8px 10px}
 .foot .stat{display:flex;flex-direction:column}
 .foot .stat .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
@@ -400,6 +400,7 @@ const pkg=v=>brl(v)+'/kg';
 const itens=x=>Array.isArray(x.itens)?x.itens:[];
 function tot(x){let kg=0,rs=0;const its=itens(x);for(const i of its){const q=Number(i.qtd)||0;kg+=q;rs+=q*(Number(i.valor)||0);}return {n:its.length,kg,rs,med:kg?rs/kg:0};}
 function cprice(r,k,i){return r&&r.cvi&&r.cvi[k]!=null?r.cvi[k]:i.valor;}
+function totCx(x){const v=itens(x).filter(i=>i.cx!=null&&i.cx!=='');return v.length?fmt(v.reduce((a,i)=>a+(Number(i.cx)||0),0)):'—';}
 function totContra(x,r){let rs=0;itens(x).forEach((i,k)=>{rs+=(Number(i.qtd)||0)*(Number(cprice(r,k,i))||0);});return rs;}
 const nItens=n=>n+(n===1?' item':' itens');
 const dec2=v=>v==null||v===''?'':String(v).replace('.',',');
@@ -419,8 +420,9 @@ const emailOk=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const meuNome=()=>(S.user&&(S.user.displayName||S.user.email))||'Você';
 
 /* ---------- writes ---------- */
-const blankItem=()=>({produto:'',qtd:'',valor:''});
-const itemEmpty=it=>!String(it.produto||'').trim()&&!String(it.qtd||'').trim()&&!String(it.valor||'').trim();
+const blankItem=()=>({produto:'',qtd:'',valor:'',cx:''});
+const cxTxt=v=>v==null||v===''?'—':fmt(v);
+const itemEmpty=it=>!String(it.produto||'').trim()&&!String(it.qtd||'').trim()&&!String(it.valor||'').trim()&&!String(it.cx||'').trim();
 function blankForm(){return {nome:recall('nome')||(S.user&&S.user.displayName)||'',cliente:'',cod:'',doc:'',supervisor:recall('sup')||'',itens:[blankItem()],desc:'',obs:''};}
 function validate(f){const e={};
   if(!f.nome.trim()) e.nome='Informe o seu nome.';
@@ -430,13 +432,14 @@ function validate(f){const e={};
   f.itens.forEach((it,k)=>{if(itemEmpty(it)) return;any=true;
     if(!it.produto.trim()) e['i'+k+'produto']='Informe o produto.';
     const q=parseNum(it.qtd); if(!q||q<=0) e['i'+k+'qtd']='Informe os kg.';
-    const v=parseNum(it.valor); if(!v||v<=0) e['i'+k+'valor']='Informe o R$/kg.';});
+    const v=parseNum(it.valor); if(!v||v<=0) e['i'+k+'valor']='Informe o R$/kg.';
+    if(String(it.cx||'').trim()){const c=parseNum(it.cx); if(!c||c<=0||Math.round(c)!==c) e['i'+k+'cx']='Caixas: número inteiro.';}});
   if(!any) e.i0produto='Adicione pelo menos um item.';
   const ds=f.desc===''?0:parseNum(f.desc); if(ds==null||ds<0||ds>100) e.desc='Desconto entre 0 e 100%.';
   if(S.cfg.supervisores.length&&!f.supervisor) e.supervisor='Escolha seu supervisor.';
   return e;}
 function formBody(f){return {vendedorNome:f.nome.trim(),cliente:f.cliente.trim(),cod:String(f.cod||'').trim().slice(0,40),doc:digits(f.doc),supervisor:f.supervisor||'',
-  itens:f.itens.filter(it=>!itemEmpty(it)).map(it=>({produto:it.produto.trim(),qtd:Math.round(parseNum(it.qtd)*1000)/1000,valor:Math.round(parseNum(it.valor)*100)/100})),
+  itens:f.itens.filter(it=>!itemEmpty(it)).map(it=>({produto:it.produto.trim(),qtd:Math.round(parseNum(it.qtd)*1000)/1000,valor:Math.round(parseNum(it.valor)*100)/100,cx:String(it.cx||'').trim()?Math.round(parseNum(it.cx)):null})),
   desc:f.desc===''?0:parseNum(f.desc),obs:f.obs.trim()};}
 async function enviar(){
   const f=S.form; const e=validate(f); S.formErr=e; if(Object.keys(e).length){render();toast('Confira os campos marcados.');return;}
@@ -485,7 +488,7 @@ async function responder(){
   if(S.busy) return; S.busy=true; S.rdErr=null; render();
   const now=new Date().toISOString(); const prev=x.resposta;
   const anteriores=prev?[...(x.anteriores||[]),prev]:(x.anteriores||[]);
-  const base=itens(x).map((i,k)=>({produto:i.produto,qtd:Number(i.qtd)||0,valor:Number(i.valor)||0,contra:cvi&&cvi[k]!=null?cvi[k]:null}));
+  const base=itens(x).map((i,k)=>({produto:i.produto,qtd:Number(i.qtd)||0,cx:i.cx!=null?i.cx:null,valor:Number(i.valor)||0,contra:cvi&&cvi[k]!=null?cvi[k]:null}));
   const resposta={dec:rd.dec,com:rd.com.trim(),cvi,cd,por:S.uid,porNome:meuNome(),em:now,versao:x.versao||1,base};
   try{await updateDoc(doc(S.db,'propostas',id),{resposta,anteriores});S.rd=null;S.respEdit=false;toast('Retorno enviado para '+vend(x)+'.');
     const nx={...x,resposta,anteriores};
@@ -683,15 +686,16 @@ function refreshFoot(){const t=formTot(S.form);const set=(id,v)=>{const e=docume
 function rdTot(x,rd){let rs=0;itens(x).forEach((i,k)=>{const v=parseNum(rd.cvi[k]);rs+=(Number(i.qtd)||0)*(v&&v>0?v:Number(i.valor)||0);});return rs;}
 function itemsEditor(f){
   let h=`<div class="sec"><div class="ihead"><h3>Itens da proposta</h3><span class="hint">Preço sempre por quilo</span></div>
-    <div class="icols" aria-hidden="true"><span>Produto</span><span>Quantidade</span><span>Preço</span><span class="r">Total</span><span></span></div>`;
-  f.itens.forEach((it,k)=>{const ep=S.formErr['i'+k+'produto'],eq=S.formErr['i'+k+'qtd'],ev=S.formErr['i'+k+'valor'];
+    <div class="icols" aria-hidden="true"><span>Produto</span><span>Quantidade</span><span>Preço</span><span>Caixas</span><span class="r">Total</span><span></span></div>`;
+  f.itens.forEach((it,k)=>{const ep=S.formErr['i'+k+'produto'],eq=S.formErr['i'+k+'qtd'],ev=S.formErr['i'+k+'valor'],ec=S.formErr['i'+k+'cx'];
     h+=`<div class="irow">
       <div class="field ip${ep?' bad':''}"><label class="sr" for="it-${k}-produto">Produto do item ${k+1}</label><input id="it-${k}-produto" data-it="${k}" data-ik="produto" placeholder="Produto ou código" autocomplete="off" value="${esc(it.produto)}">${ep?`<span class="err">${esc(ep)}</span>`:''}</div>
       <div class="field iq${eq?' bad':''}"><label class="sr" for="it-${k}-qtd">Quantidade em kg do item ${k+1}</label><div class="affix"><input id="it-${k}-qtd" data-it="${k}" data-ik="qtd" inputmode="decimal" placeholder="0" autocomplete="off" value="${esc(it.qtd)}"><span>kg</span></div>${eq?`<span class="err">${esc(eq)}</span>`:''}</div>
       <div class="field iv${ev?' bad':''}"><label class="sr" for="it-${k}-valor">Preço por kg do item ${k+1}</label><div class="affix"><span>R$</span><input id="it-${k}-valor" data-it="${k}" data-ik="valor" inputmode="decimal" placeholder="0,00" autocomplete="off" value="${esc(it.valor)}"><span>/kg</span></div>${ev?`<span class="err">${esc(ev)}</span>`:''}</div>
+      <div class="field ic${ec?' bad':''}"><label class="sr" for="it-${k}-cx">Quantidade de caixas do item ${k+1}</label><div class="affix"><input id="it-${k}-cx" data-it="${k}" data-ik="cx" inputmode="numeric" placeholder="0" autocomplete="off" value="${esc(it.cx||'')}"><span>cx</span></div>${ec?`<span class="err">${esc(ec)}</span>`:''}</div>
       <div class="itot num" id="it-tot-${k}">${rowTot(it)}</div>
       <button class="btn small ghost irm" data-rm="${k}" aria-label="Remover item ${k+1}" ${f.itens.length===1?'disabled':''}>×</button></div>`;});
-  return h+`<div class="iadd"><button class="btn small" id="btnAddItem">+ Adicionar item</button><span class="hint">Enter no preço do último item também abre uma linha nova</span></div></div>`;
+  return h+`<div class="iadd"><button class="btn small" id="btnAddItem">+ Adicionar item</button><span class="hint">Enter nas caixas do último item também abre uma linha nova</span></div></div>`;
 }
 function renderForm(m){
   const f=S.form||(S.form=blankForm()); const sups=S.cfg.supervisores;
@@ -727,7 +731,7 @@ function verdictBox(r,cls,x){
 }
 function summaryText(x){const r=cur(x),st=status(x),t=tot(x);const contra=r&&r.dec==='contra';
   return [`Proposta ${x.n} — ${x.cliente}`,`Vendedor: ${vend(x)}${isRep(x)?' (representante)':''}${x.supervisor?' · Supervisor: '+x.supervisor:''}`,x.cod?`Código do cliente: ${x.cod}`:'',x.doc?`CNPJ/CPF: ${fmtDoc(x.doc)}`:'',
-    ...itens(x).map((i,k)=>`• ${i.produto}: ${fmt(i.qtd)} kg × ${pkg(i.valor)} = ${brl(i.qtd*i.valor)}${contra&&r.cvi&&r.cvi[k]!=null?` → contra ${pkg(r.cvi[k])}`:''}`),
+    ...itens(x).map((i,k)=>`• ${i.produto}: ${fmt(i.qtd)} kg${i.cx?` (${fmt(i.cx)} cx)`:''} × ${pkg(i.valor)} = ${brl(i.qtd*i.valor)}${contra&&r.cvi&&r.cvi[k]!=null?` → contra ${pkg(r.cvi[k])}`:''}`),
     `Total: ${fmt(t.kg)} kg · ${brl(t.rs)} (média ${pkg(t.med)})${x.desc?' · Desconto: '+fmt(x.desc)+'%':''}`,x.obs?`Obs.: ${x.obs}`:'',`Status: ${ST[st]}`,
     r?`Retorno: ${r.com||DEC[r.dec]}${contra?` · novo total ${brl(totContra(x,r))}${r.cd!=null?', desconto '+fmt(r.cd)+'%':''}`:''}`:''].filter(Boolean).join('\n');}
 function liberadoAntes(a,x){
@@ -765,9 +769,9 @@ function renderDetail(m,id,adm){
     <div><dt>CNPJ / CPF</dt><dd class="mono">${x.doc?esc(fmtDoc(x.doc)):'Não informado'}</dd></div>
     <div><dt>${adm?'Vendedor · supervisor':'Supervisor'}</dt><dd>${adm?esc(vend(x))+'<small>'+esc((x.vendedorEmail||'')+' · '+(x.supervisor||'supervisor não informado'))+'</small>':esc(x.supervisor||'Não informado')}</dd></div>
   </dl></div>
-  <div class="sec"><h3>Itens</h3><div class="tbl-wrap"><table class="itab"><thead><tr><th>Produto</th><th class="n">Kg</th><th class="n">R$/kg</th><th class="n">Total</th>${showC?'<th class="n">Contraproposta</th><th class="n">Novo total</th>':''}</tr></thead><tbody>
-  ${itens(x).map((i,j)=>{const has=showC&&c.cvi&&c.cvi[j]!=null;const cp=cprice(showC?c:null,j,i);return `<tr><td>${esc(i.produto)}</td><td class="n">${fmt(i.qtd)}</td><td class="n">${brl(i.valor)}</td><td class="n">${brl(i.qtd*i.valor)}</td>${showC?`<td class="n${has?' c':''}">${has?brl(cp):'mantido'}</td><td class="n">${brl(i.qtd*cp)}</td>`:''}</tr>`;}).join('')}
-  </tbody><tfoot><tr><td>Total</td><td class="n">${fmt(t.kg)}</td><td class="n">${brl(t.med)}</td><td class="n">${brl(t.rs)}</td>${showC?`<td></td><td class="n">${brl(totContra(x,c))}</td>`:''}</tr></tfoot></table></div></div>`;
+  <div class="sec"><h3>Itens</h3><div class="tbl-wrap"><table class="itab"><thead><tr><th>Produto</th><th class="n">Kg</th><th class="n">R$/kg</th><th class="n">Caixas</th><th class="n">Total</th>${showC?'<th class="n">Contraproposta</th><th class="n">Novo total</th>':''}</tr></thead><tbody>
+  ${itens(x).map((i,j)=>{const has=showC&&c.cvi&&c.cvi[j]!=null;const cp=cprice(showC?c:null,j,i);return `<tr><td>${esc(i.produto)}</td><td class="n">${fmt(i.qtd)}</td><td class="n">${brl(i.valor)}</td><td class="n">${cxTxt(i.cx)}</td><td class="n">${brl(i.qtd*i.valor)}</td>${showC?`<td class="n${has?' c':''}">${has?brl(cp):'mantido'}</td><td class="n">${brl(i.qtd*cp)}</td>`:''}</tr>`;}).join('')}
+  </tbody><tfoot><tr><td>Total</td><td class="n">${fmt(t.kg)}</td><td class="n">${brl(t.med)}</td><td class="n">${totCx(x)}</td><td class="n">${brl(t.rs)}</td>${showC?`<td></td><td class="n">${brl(totContra(x,c))}</td>`:''}</tr></tfoot></table></div></div>`;
   if(x.obs) h+=`<div class="note"><b>Observações do vendedor:</b> ${esc(x.obs)}</div>`;
   if(c&&!(adm&&S.respEdit)){h+=`<div class="sec" style="padding-bottom:4px"><h3>Retorno</h3></div>`+verdictBox(c,st==='aceita'?'aceita':c.dec,x);}
   const prevs=[...(x.anteriores||[]),...(x.resposta&&!c?[x.resposta]:[])];
@@ -843,9 +847,9 @@ async function alternar(id){const a=(S.acessos||[]).find(z=>z.id===id);if(!a) re
 function exportCsv(){
   const q=v=>{const s=String(v??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const d=v=>v==null?'':String(Math.round(v*1000)/1000).replace('.',',');
-  const lines=[['Proposta','Versão','Vendedor','E-mail','Supervisor','Cliente','Código do cliente','CNPJ/CPF','Enviada','Status','Produto','Kg','Preço (R$/kg)','Total do item (R$)','Contraproposta (R$/kg)','Total da proposta (R$)','Desconto pedido (%)','Desconto liberado (%)','Retorno','Comentário','Respondido por','Tempo de retorno (h)']];
+  const lines=[['Proposta','Versão','Vendedor','E-mail','Supervisor','Cliente','Código do cliente','CNPJ/CPF','Enviada','Status','Produto','Kg','Preço (R$/kg)','Caixas','Total do item (R$)','Contraproposta (R$/kg)','Total da proposta (R$)','Desconto pedido (%)','Desconto liberado (%)','Retorno','Comentário','Respondido por','Tempo de retorno (h)']];
   for(const r of histRows()){const t=tot(r.x);const contra=r.r&&r.r.dec==='contra';
-    itens(r.x).forEach((i,k)=>lines.push([r.x.n,r.x.versao||1,vend(r.x),r.x.vendedorEmail||'',r.x.supervisor||'',r.x.cliente,r.x.cod||'',fmtDoc(r.x.doc),fDT(r.x.enviadaEm),ST[r.st],i.produto,d(i.qtd),d(i.valor),d(Math.round(i.qtd*i.valor*100)/100),contra&&r.r.cvi&&r.r.cvi[k]!=null?d(r.r.cvi[k]):'',d(Math.round(t.rs*100)/100),d(r.x.desc||0),r.r&&r.r.cd!=null?d(r.r.cd):'',r.r?fDT(r.r.em):'',r.r?r.r.com:'',r.r?r.r.porNome||'':'',r.t!=null?d(Math.round(r.t/36e5*100)/100):'']));}
+    itens(r.x).forEach((i,k)=>lines.push([r.x.n,r.x.versao||1,vend(r.x),r.x.vendedorEmail||'',r.x.supervisor||'',r.x.cliente,r.x.cod||'',fmtDoc(r.x.doc),fDT(r.x.enviadaEm),ST[r.st],i.produto,d(i.qtd),d(i.valor),i.cx!=null?i.cx:'',d(Math.round(i.qtd*i.valor*100)/100),contra&&r.r.cvi&&r.r.cvi[k]!=null?d(r.r.cvi[k]):'',d(Math.round(t.rs*100)/100),d(r.x.desc||0),r.r&&r.r.cd!=null?d(r.r.cd):'',r.r?fDT(r.r.em):'',r.r?r.r.com:'',r.r?r.r.porNome||'':'',r.t!=null?d(Math.round(r.t/36e5*100)/100):'']));}
   const blob=new Blob(['﻿'+lines.map(l=>l.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Propostas.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
 }
@@ -854,16 +858,17 @@ function exportCsv(){
 function copiarProposta(id){const x=get(id);if(!x) return;const c=cur(x);const usaContra=status(x)==='aceita';
   const f=blankForm();
   S.form={...f,cliente:x.cliente||'',cod:x.cod||'',doc:fmtDoc(x.doc),supervisor:x.supervisor||f.supervisor,
-    itens:itens(x).map((i,k)=>({produto:i.produto,qtd:dec2(i.qtd),valor:dec2(usaContra?cprice(c,k,i):i.valor)})),
+    itens:itens(x).map((i,k)=>({produto:i.produto,qtd:dec2(i.qtd),valor:dec2(usaContra?cprice(c,k,i):i.valor),cx:i.cx!=null&&i.cx!==''?String(i.cx):''})),
     desc:usaContra?'':(x.desc?dec2(x.desc):''),obs:x.obs||''};
   if(!S.form.itens.length) S.form.itens=[blankItem()];
   S.sel='__nova';S.editId=null;S.copiaDe=id;S.formErr={};render(true);
   toast('Proposta copiada'+(usaContra?' com os preços da contraproposta':'')+'. Confira e envie.');}
 function openForm(editId){S.sel='__nova';S.editId=editId||null;S.copiaDe=null;S.formErr={};
-  if(editId){const x=get(editId);S.form={nome:x.vendedorNome||'',cliente:x.cliente,cod:x.cod||'',doc:fmtDoc(x.doc),supervisor:x.supervisor||'',itens:itens(x).map(i=>({produto:i.produto,qtd:dec2(i.qtd),valor:dec2(i.valor)})),desc:x.desc?dec2(x.desc):'',obs:x.obs||''};if(!S.form.itens.length) S.form.itens=[blankItem()];}
+  if(editId){const x=get(editId);S.form={nome:x.vendedorNome||'',cliente:x.cliente,cod:x.cod||'',doc:fmtDoc(x.doc),supervisor:x.supervisor||'',itens:itens(x).map(i=>({produto:i.produto,qtd:dec2(i.qtd),valor:dec2(i.valor),cx:i.cx!=null&&i.cx!==''?String(i.cx):''})),desc:x.desc?dec2(x.desc):'',obs:x.obs||''};if(!S.form.itens.length) S.form.itens=[blankItem()];}
   else S.form=blankForm(); render(true);}
 function addItem(){if(!S.form) return;S.form.itens.push(blankItem());render();const el=document.getElementById('it-'+(S.form.itens.length-1)+'-produto');if(el) el.focus();}
-document.addEventListener('keydown',ev=>{const el=ev.target;if(ev.key==='Enter'&&el.dataset&&el.dataset.ik==='valor'&&S.form&&+el.dataset.it===S.form.itens.length-1){ev.preventDefault();addItem();}});
+document.addEventListener('keydown',ev=>{const el=ev.target;if(ev.key==='Enter'&&el.dataset&&el.dataset.ik==='valor'&&S.form){ev.preventDefault();const n=document.getElementById('it-'+el.dataset.it+'-cx');if(n) n.focus();}
+  else if(ev.key==='Enter'&&el.dataset&&el.dataset.ik==='cx'&&S.form&&+el.dataset.it===S.form.itens.length-1){ev.preventDefault();addItem();}});
 document.addEventListener('submit',ev=>{if(ev.target.id==='aform'){ev.preventDefault();entrarEmail();}});
 document.addEventListener('click',async ev=>{
   const t=ev.target.closest('button,[data-sel]'); if(!t) return;
