@@ -3308,6 +3308,18 @@ def garantir_script_pallets(html):
     return html.replace('</body>', TAG_PALLETS + '\n</body>', 1)
 
 
+# ── Pedidos em Aberto: filial de cada pedido (pedidos-filial.js) ──
+TAG_PEDIDOS_FILIAL = '<script src="./pedidos-filial.js" defer></script>'
+
+
+def garantir_script_pedidos_filial(html):
+    if 'pedidos-filial.js' in html or '</body>' not in html:
+        return html
+    if not os.path.exists("pedidos-filial.js"):
+        return html
+    return html.replace('</body>', TAG_PEDIDOS_FILIAL + '\n</body>', 1)
+
+
 def corrigir_menu_em_todas_as_paginas():
     import glob
     for caminho in sorted(glob.glob("*.html")):
@@ -3317,6 +3329,8 @@ def corrigir_menu_em_todas_as_paginas():
             novo = garantir_menu_estoques(atual)
             if caminho.endswith('index.html') or caminho.endswith('apucarana.html'):
                 novo = garantir_script_pallets(novo)
+            if caminho.endswith('pedidos-em-aberto.html'):
+                novo = garantir_script_pedidos_filial(novo)
             if caminho.endswith('tabela-precos.html'):
                 novo = garantir_css_tema_claro(novo)
                 if 'id="ajuste-tema-claro"' in novo:
