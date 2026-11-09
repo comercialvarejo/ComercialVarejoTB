@@ -3320,6 +3320,18 @@ def garantir_script_pedidos_filial(html):
     return html.replace('</body>', TAG_PEDIDOS_FILIAL + '\n</body>', 1)
 
 
+# ── Tabela de Preços: botão de copiar o código do produto (precos-copiar.js) ──
+TAG_PRECOS_COPIAR = '<script src="./precos-copiar.js" defer></script>'
+
+
+def garantir_script_precos_copiar(html):
+    if 'precos-copiar.js' in html or '</body>' not in html:
+        return html
+    if not os.path.exists("precos-copiar.js"):
+        return html
+    return html.replace('</body>', TAG_PRECOS_COPIAR + '\n</body>', 1)
+
+
 def corrigir_menu_em_todas_as_paginas():
     import glob
     for caminho in sorted(glob.glob("*.html")):
@@ -3333,6 +3345,7 @@ def corrigir_menu_em_todas_as_paginas():
                 novo = garantir_script_pedidos_filial(novo)
             if caminho.endswith('tabela-precos.html'):
                 novo = garantir_css_tema_claro(novo)
+                novo = garantir_script_precos_copiar(novo)
                 if 'id="ajuste-tema-claro"' in novo:
                     print('OK - ajuste do tema claro presente em tabela-precos.html')
             if novo != atual:
