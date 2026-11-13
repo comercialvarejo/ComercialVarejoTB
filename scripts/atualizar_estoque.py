@@ -39,6 +39,7 @@ EMPENHO_PARA_REQ_PV_RESERVA, ESTOQUE_DISPONIVEL, DT_ULT_MOV
 import os
 import re
 import csv
+import unicodedata
 import json
 import sys
 from datetime import datetime, timedelta, timezone
@@ -1763,16 +1764,31 @@ def carregar_validades(csv_text):
     hoje = datetime.now(timezone.utc) - timedelta(hours=3)
     hoje = hoje.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
 
+    # Relatório de validade "cru" (ex.: Validade Apucarana.xlsx colado na aba):
+    # cabeçalho com "Código do cliente" / "Validade" / "Peso líquido" em qualquer
+    # posição. Nesse caso lê pelas colunas e ignora a linha "Total (...)".
+    def _norm(x):
+        return unicodedata.normalize("NFKD", str(x or "")).encode("ascii", "ignore").decode().strip().lower()
+    col_cod, col_peso, col_val, inicio = 0, 1, 2, 2
+    for i, r in enumerate(rows[:6]):
+        cab = [_norm(c) for c in r]
+        if "codigo do cliente" in cab and "validade" in cab and "peso liquido" in cab:
+            col_cod, col_peso, col_val = cab.index("codigo do cliente"), cab.index("peso liquido"), cab.index("validade")
+            inicio = i + 1
+            break
+
     validades = {}
-    for r in rows[2:]:
-        if not r or not r[0]:
+    for r in rows[inicio:]:
+        if not r or len(r) <= col_cod or not r[col_cod] or not r[col_cod].strip():
             continue
-        codigo = r[0].strip()
+        codigo = r[col_cod].strip()
+        if _norm(codigo).startswith("total"):
+            continue
         try:
-            peso = float(str(r[1]).replace(".", "").replace(",", ".")) if r[1] else 0
+            peso = float(str(r[col_peso]).replace(".", "").replace(",", ".")) if len(r) > col_peso and r[col_peso] else 0
         except (ValueError, IndexError):
             peso = 0
-        data_str = r[2].strip() if len(r) > 2 else ""
+        data_str = r[col_val].strip() if len(r) > col_val else ""
         # Linha sem data utilizável - célula vazia, o texto "Sem data", ou
         # qualquer formato diferente de dd/mm/aaaa - entra assim mesmo,
         # marcada com "sd": True. Antes ela era descartada em silêncio e o
@@ -2534,6 +2550,13 @@ SUFIXO_POR_DATA_SEC = {
 # card que já existia com outro nome.
 NOME_CANONICO_PRECO = {
     # "peito|filezinho sassami ind ou 1kg": "Filezinho Sassami Ind. ou Pct 1kg",
+    "resfBdj|figado": "Fígado BDJ 600g",
+    "resfBdj|pescoco": "Pescoço",
+    "resfBdj|moela": "Moela BDJ 600g",
+    "resfBdj|coracao": "Coração",
+    "resfBdj|sambiquira": "Sambiquira",
+    "resfBdj|pes": "Pés",
+    "perna|sobrecoxa": "Sobrecoxa",
 }
 
 
