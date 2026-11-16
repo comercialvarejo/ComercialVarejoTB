@@ -2860,6 +2860,22 @@ def atualizar_precos_html(html, precos):
         new_html,
     )
 
+    # ── Mês de referência no cabeçalho e no título: sempre o mês atual ──
+    meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
+             "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    mes_ano = f"{meses[hoje_brt.month - 1]} {hoje_brt.year}"
+    nomes_mes = "|".join(meses)
+    new_html = re.sub(
+        rf'(<p>)(?:{nomes_mes}) \d{{4}}( · Varejo)',
+        rf"\g<1>{mes_ano}\g<2>",
+        new_html,
+    )
+    new_html = re.sub(
+        rf'(<title>Tabela de Preços – )(?:{nomes_mes}) \d{{4}}(</title>)',
+        rf"\g<1>{mes_ano}\g<2>",
+        new_html,
+    )
+
     return new_html
 
 
