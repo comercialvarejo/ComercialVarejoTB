@@ -284,6 +284,7 @@
   .bn-linha { font-size:12.5px; opacity:.85; }
   .bn-item input { width:100%; box-sizing:border-box; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; font-size:16px; outline:none; -webkit-appearance:none; }
   .bn-item input:focus { border-color:var(--brand-glow); }
+  .field input[type=date] { min-height:44px; }
   .bn-add { width:100%; margin:2px 0 10px; }
   .bn-total { display:flex; justify-content:space-between; font-weight:700; padding:12px; border-radius:12px; background:var(--line-soft); font-size:15px; }
   .bn-total small { font-weight:500; opacity:.75; display:block; font-size:11px; }
@@ -840,6 +841,8 @@ function gerarPdfBonificacao(d) {
   campo('Supervisor:', d.supervisorNome);
   campo('Gestor:', d.gestor);
   campo('Autorizado por:', d.autorizado);
+  campo('Carregamento:', d.dataCarregamento);
+  campo('Entrega:', d.dataEntrega);
   y -= 8;
   txt(M, y, 'ITENS', 10, true, '0.11 0.45 0.25 rg'); y -= 6; linha(M, y, W - M); y -= 14;
   var cx = { n: M, cod: M + 28, nome: M + 128, qtd: W - M - 215, kg: W - M - 150, pk: W - M - 85, val: W - M };
@@ -919,6 +922,9 @@ function abrirModalBonificacao(template) {
     '<div class="bn-row2">' + campoHtml('bn_sup', 'Supervisor', 'Nome do supervisor') +
       campoHtml('bn_supmail', 'E-mail do supervisor <span class="hint">(vai em cópia)</span>', 'supervisor@gtf.com.br', 'type="email" autocapitalize="none"') + '</div>' +
     campoHtml('bn_aut', 'Autorizado por', 'Quem autorizou a bonificação') +
+    '<div class="bn-sec">Datas</div>' +
+    '<div class="bn-row2">' + campoHtml('bn_dcarreg', 'Data de carregamento <span class="hint">(obrigatória)</span>', '', 'type="date" required') +
+      campoHtml('bn_dentrega', 'Data de entrega <span class="hint">(obrigatória)</span>', '', 'type="date" required') + '</div>' +
     '<div class="bn-sec">Itens</div><div id="bn_itens"></div>' +
     '<button type="button" class="btn btn-secondary bn-add" id="bn_add">➕ Adicionar item</button>' +
     '<div class="bn-total"><div>TOTAL<small id="bn_totcx">0 caixas</small></div><div id="bn_totval">R$ 0,00</div></div>' +
@@ -968,7 +974,10 @@ function abrirModalBonificacao(template) {
       if (it.codigo || it.nome || it.qtd || it.kg || it.preco) itens.push(it);
     });
     var d = new Date();
-    return { razaoSocial: g('bn_razao'), codigo: g('bn_codigo'), vendedor: g('bn_vendedor'), gestor: g('bn_gestor'),
+    var fmtData = function(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
+    return { dataCarregamentoIso: g('bn_dcarreg'), dataEntregaIso: g('bn_dentrega'),
+      dataCarregamento: fmtData(g('bn_dcarreg')), dataEntrega: fmtData(g('bn_dentrega')),
+      razaoSocial: g('bn_razao'), codigo: g('bn_codigo'), vendedor: g('bn_vendedor'), gestor: g('bn_gestor'),
       supervisorNome: g('bn_sup'), supervisorEmail: g('bn_supmail'), autorizado: g('bn_aut'),
       motivo: g('bn_motivo'), itens: itens,
       data: ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear() };
@@ -990,7 +999,7 @@ function abrirModalBonificacao(template) {
   function mailtoDe(d) {
     var r = resumoTexto(d);
     var corpo = saudacao() + '\n\nSolicito bonificação para o cliente ' + d.razaoSocial + ' (cód. ' + d.codigo + ').\n\n' +
-      'Vendedor: ' + d.vendedor + '\nSupervisor: ' + d.supervisorNome + '\nGestor: ' + d.gestor + '\nAutorizado por: ' + d.autorizado + '\n\n' +
+      'Vendedor: ' + d.vendedor + '\nSupervisor: ' + d.supervisorNome + '\nGestor: ' + d.gestor + '\nAutorizado por: ' + d.autorizado + '\nData de carregamento: ' + d.dataCarregamento + '\nData de entrega: ' + d.dataEntrega + '\n\n' +
       'Itens:\n' + r.linhas + '\n\nTOTAL: ' + String(r.cx).replace('.', ',') + ' caixas | ' + brl(r.vl) + '\n\n' +
       'Motivo:\n' + d.motivo + '\n\n📎 PDF da solicitação em anexo.\n\n' +
       'Supervisor ' + d.supervisorNome + ', poderia dar o OK respondendo este e-mail, por favor.';
@@ -1018,6 +1027,11 @@ function abrirModalBonificacao(template) {
     if (!d.supervisorEmail) falta.push('E-mail do supervisor');
     if (!d.gestor) falta.push('Gestor');
     if (!d.autorizado) falta.push('Autorizado por');
+    if (!d.dataCarregamento) falta.push('Data de carregamento');
+    if (!d.dataEntrega) falta.push('Data de entrega');
+    if (d.dataCarregamentoIso && d.dataEntregaIso && d.dataEntregaIso < d.dataCarregamentoIso) {
+      window.alert('A data de entrega não pode ser anterior à data de carregamento.'); return;
+    }
     if (!d.itens.length) falta.push('pelo menos 1 item');
     else if (d.itens.some(function(it) { return !it.nome || !(it.qtd > 0) || !(it.kg > 0) || !(it.preco > 0); })) falta.push('nome, caixas, peso da caixa e preço por kg de cada item');
     if (!d.motivo) falta.push('Motivo da bonificação');
